@@ -24,6 +24,7 @@ namespace NLS {
 		AniSprite currentAnimation;
 		bool hide;
 		bool isNPC;
+		MapleRNG moveRNG;
 		static map <uint32_t, Mob*> Mobs;
 		static map <uint32_t, Npc*> Npcs;
 		static uint32_t NpcStart, MobStart;

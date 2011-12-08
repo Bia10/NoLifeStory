@@ -5,6 +5,7 @@
 #include "Global.h"
 
 map<uint16_t, function<void(NLS::Packet&)>> NLS::Packet::Handlers;
+map<NLS::Packet::HeaderSendTypes, uint16_t> NLS::Packet::Headers;
 
 void NLS::Packet::Send() {
 	if (!Network::Connected or Profiling) return;
@@ -137,13 +138,21 @@ void NLS::Handle::Init() {
 
 	if (locale == NLS::Locales::Global) {
 		if (version == 75) {
-			Packet::Handlers[0x11] = &NLS::Handle::Ping;
-			Packet::Handlers[0x72] = &NLS::Handle::ChangeMap;
-			Packet::Handlers[0x91] = &NLS::Handle::PlayerSpawn;
-			Packet::Handlers[0x92] = &NLS::Handle::PlayerDespawn;
-			Packet::Handlers[0xA7] = &NLS::Handle::PlayerMove;
-			Packet::Handlers[0xAF] = &NLS::Handle::PlayerEmote;
-			Packet::Handlers[0xE3] = &NLS::Handle::NpcSpawn;
+			Packet::Handlers[0x0011] = &NLS::Handle::Ping;
+			Packet::Handlers[0x0072] = &NLS::Handle::ChangeMap;
+			Packet::Handlers[0x0091] = &NLS::Handle::PlayerSpawn;
+			Packet::Handlers[0x0092] = &NLS::Handle::PlayerDespawn;
+			Packet::Handlers[0x00A7] = &NLS::Handle::PlayerMove;
+			Packet::Handlers[0x00AF] = &NLS::Handle::PlayerEmote;
+			Packet::Handlers[0x00E3] = &NLS::Handle::NpcSpawn;
+			
+			Packet::Headers[Packet::Pong] = 0x0019;
+			Packet::Headers[Packet::PlayerLoad] = 0x0014;
+			Packet::Headers[Packet::PlayerEmote] = 0x0032;
+			Packet::Headers[Packet::PlayerMove] = 0x0039;
+			Packet::Headers[Packet::PortalUse] = 0x0025;
+			Packet::Headers[Packet::PortalUseScripted] = 0x0063;
+			Packet::Headers[Packet::NpcChatStart] = 0x0039;
 		}
 	}
 
@@ -666,13 +675,13 @@ void NLS::Handle::NpcSpawn(Packet &packet) {
 }
 
 void NLS::Send::Pong() {
-	Packet packet(0x19);
+	Packet packet(Packet::Headers[Packet::Pong]);
 	packet.Send();
 }
 
 void NLS::Send::Pang() {
 	// Loading special character for local testserver.
-	NLS::Packet packet(0x14);
+	NLS::Packet packet(Packet::Headers[Packet::PlayerLoad]);
 	packet.Write<int32_t>(3); // Special Character!
 	packet.Send();
 	//NLS::Packet packet(0x18);
@@ -700,13 +709,13 @@ void NLS::Send::Handshake() {
 }
 
 void NLS::Send::PlayerEmote(int32_t emote) {
-	NLS::Packet packet(0x32);
+	NLS::Packet packet(Packet::Headers[Packet::PlayerEmote]);
 	packet.Write<int32_t>(emote);
 	packet.Send();
 }
 
 void NLS::Send::UsePortal(const string &portalname) {
-	NLS::Packet packet(0x25);
+	NLS::Packet packet(Packet::Headers[Packet::PortalUse]);
 	packet.Write<uint8_t>(ThisPlayer->currentPortal);
 	packet.Write<int32_t>(-1);
 	packet.Write<string>(portalname);
@@ -714,14 +723,14 @@ void NLS::Send::UsePortal(const string &portalname) {
 }
 
 void NLS::Send::UsePortalScripted(const string &portalname) {
-	NLS::Packet packet(0x63);
+	NLS::Packet packet(Packet::Headers[Packet::PortalUseScripted]);
 	packet.Write<uint8_t>(ThisPlayer->currentPortal);
 	packet.Write<string>(portalname);
 	packet.Send();
 }
 
 void NLS::Send::Revive() {
-	NLS::Packet packet(0x25);
+	NLS::Packet packet(Packet::Headers[Packet::PortalUse]);
 	packet.Write<uint8_t>(ThisPlayer->currentPortal);
 	packet.Write<int32_t>(0);
 	packet.Write<string>("");
@@ -731,21 +740,21 @@ void NLS::Send::Revive() {
 }
 
 void NLS::Send::GmMapTeleport(int32_t mapid) {
-	NLS::Packet packet(0x25);
+	NLS::Packet packet(Packet::Headers[Packet::PortalUse]);
 	packet.Write<uint8_t>(ThisPlayer->currentPortal);
 	packet.Write<int32_t>(mapid);
 	packet.Send();
 }
 
 void NLS::Send::NpcChatStart(int32_t npcid) {
-	NLS::Packet packet(0x39);
+	NLS::Packet packet(Packet::Headers[Packet::NpcChatStart]);
 	packet.Write<uint8_t>(ThisPlayer->currentPortal);
 	packet.Write<int32_t>(npcid);
 	packet.Send();
 }
 
 void NLS::Send::PlayerMove() {
-	NLS::Packet p(0x28);
+	NLS::Packet p(Packet::Headers[Packet::PlayerMove]);
 	p.Write<int8_t>(ThisPlayer->currentPortal);
 	p.Write<int32_t>(0); // Move X and Y??
 	p.Write<int16_t>(ThisPlayer->x);

@@ -7,7 +7,6 @@ namespace NLS {
 	public:
 		vector<uint8_t> data;
 		size_t pos;
-		static map<uint16_t, function<void(Packet&)>> Handlers;
 		Packet() : pos(0), data() {}
 		Packet(uint16_t opcode) : pos(0), data() {
 			Write<int32_t>(0);
@@ -45,6 +44,20 @@ namespace NLS {
 		void Write(T v) {
 			data.insert(data.end(), (uint8_t*)&v, (uint8_t*)&v+sizeof(T));
 		}
+
+		
+		enum HeaderSendTypes {
+			Pong,
+			PlayerLoad,
+			PlayerMove,
+			PlayerEmote,
+			PortalUse,
+			PortalUseScripted,
+			NpcChatStart
+		};
+
+		static map<HeaderSendTypes, uint16_t> Headers;
+		static map<uint16_t, function<void(Packet&)>> Handlers;
 	};
 	template <>
 	inline string Packet::Read<string>() {

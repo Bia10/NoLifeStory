@@ -35,6 +35,11 @@ void NLS::Key::Init() {
 	Set(sf::Keyboard::Num8, [](){ThisPlayer->ChangeEmote(20);});
 	Set(sf::Keyboard::Num9, [](){ThisPlayer->ChangeEmote(21);});
 	Set(sf::Keyboard::Num0, [](){ThisPlayer->ChangeEmote(22);});
+	Set(sf::Keyboard::Z, [](){if (sf::Keyboard::IsKeyPressed(sf::Keyboard::LControl)) {
+		auto l = WZ["Character"]["Cap"];
+		
+	}
+	});
 	Left = Right = Up = Down = false;
 }
 

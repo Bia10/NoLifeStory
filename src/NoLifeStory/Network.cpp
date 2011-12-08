@@ -143,7 +143,7 @@ void NLS::Network::Loop() {
 				uint16_t opcode = p.Read<uint16_t>();
 				auto& f = p.Handlers[opcode];
 				if (f) f(p);
-				else cerr << "No packet handler for opcode: " << opcode << endl;
+				else cerr << "No packet handler for opcode: " << hex << uppercase << setw(4) << setfill('0') << opcode << endl;
 				ghead = true;
 				pos = 0;
 			}
