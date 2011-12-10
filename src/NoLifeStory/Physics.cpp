@@ -626,3 +626,33 @@ bool NLS::Physics::CheckPosition(int32_t _x, int32_t _y) {
 	}
 	return bFound;
 }
+
+NLS::Npc * NLS::Physics::GetNpcInRange(int32_t maxrange) {
+	auto found = find_if(Life::Npcs.begin(), Life::Npcs.end(), [&](pair<uint32_t, Npc *>p) {
+		return abs(p.second->x - x) <= maxrange && abs(p.second->y - y) <= maxrange;
+	});
+	if (found != Life::Npcs.end()) {
+		return found->second;
+	}
+	return nullptr;
+}
+
+NLS::Mob * NLS::Physics::GetMobInRange(int32_t maxrange) {
+	auto found = find_if(Life::Mobs.begin(), Life::Mobs.end(), [&](pair<uint32_t, Mob *>p) {
+		return abs(p.second->x - x) <= maxrange && abs(p.second->y - y) <= maxrange;
+	});
+	if (found != Life::Mobs.end()) {
+		return found->second;
+	}
+	return nullptr;
+}
+
+NLS::Player * NLS::Physics::GetPlayerInRange(int32_t maxrange) {
+	auto found = find_if(Map::Players.begin(), Map::Players.end(), [&](pair<uint32_t, Player *>p) {
+		return abs(p.second->x - x) <= maxrange && abs(p.second->y - y) <= maxrange;
+	});
+	if (found != Map::Players.end()) {
+		return found->second;
+	}
+	return nullptr;
+}

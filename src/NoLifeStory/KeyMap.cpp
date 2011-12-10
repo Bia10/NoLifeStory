@@ -13,6 +13,8 @@ void NLS::Key::Init() {
 	Set(sf::Keyboard::Up, Func(ThisPlayer->UsePortal));
 	Set(sf::Keyboard::LAlt, Func(ThisPlayer->Jump));
 	Set(sf::Keyboard::RAlt, Func(ThisPlayer->Jump));
+	Set(sf::Keyboard::LControl, [](){ThisPlayer->DoAttack();});
+	Set(sf::Keyboard::RControl, [](){ThisPlayer->DoAttack();});
 	Set(sf::Keyboard::F1, [](){ThisPlayer->ChangeEmote(1);});
 	Set(sf::Keyboard::F2, [](){ThisPlayer->ChangeEmote(2);});
 	Set(sf::Keyboard::F3, [](){ThisPlayer->ChangeEmote(3);});

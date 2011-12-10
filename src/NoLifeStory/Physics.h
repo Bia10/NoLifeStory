@@ -4,6 +4,9 @@
 ////////////////////////////////////////////////////
 namespace NLS {
 	struct Movement;
+	class Mob;
+	class Npc;
+	class Player;
 	class Physics {
 	public:
 		double x, y, r;
@@ -30,6 +33,9 @@ namespace NLS {
 		void MouseFly();
 		void AddMovement(int8_t action);
 		bool CheckPosition(int32_t _x, int32_t _y);
+		Mob * GetMobInRange(int32_t maxrange);
+		Npc * GetNpcInRange(int32_t maxrange);
+		Player * GetPlayerInRange(int32_t maxrange);
 		static void Init();
 		static string StanceToString(int8_t stance);
 	};

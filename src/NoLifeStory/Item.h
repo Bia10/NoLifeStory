@@ -69,6 +69,75 @@ namespace NLS {
 		void modifyFlags(bool add, int16_t flags);
 		bool testFlags(int16_t flags) const;
 	};
+	
+	namespace EquipSlots {
+		enum {
+			Helm = 1,
+			Face = 2,
+			Eye = 3,
+			Earring = 4,
+			Top = 5,
+			Bottom = 6,
+			Shoe = 7,
+			Glove = 8,
+			Cape = 9,
+			Shield = 10,
+			Weapon = 11,
+			Ring1 = 12,
+			Ring2 = 13,
+			PetEquip1 = 14,
+			Ring3 = 15,
+			Ring4 = 16,
+			Pendant = 17,
+			Mount = 18,
+			Saddle = 19,
+			PetCollar = 20,
+			PetLabelRing1 = 21,
+			PetItemPouch1 = 22,
+			PetMesoMagnet1 = 23,
+			PetAutoHp = 24,
+			PetAutoMp = 25,
+			PetWingBoots1 = 26,
+			PetBinoculars1 = 27,
+			PetMagicScales1 = 28,
+			PetQuoteRing1 = 29,
+			PetEquip2 = 30,
+			PetLabelRing2 = 31,
+			PetQuoteRing2 = 32,
+			PetItemPouch2 = 33,
+			PetMesoMagnet2 = 34,
+			PetWingBoots2 = 35,
+			PetBinoculars2 = 36,
+			PetMagicScales2 = 37,
+			PetEquip3 = 38,
+			PetLabelRing3 = 39,
+			PetQuoteRing3 = 40,
+			PetItemPouch3 = 41,
+			PetMesoMagnet3 = 42,
+			PetWingBoots3 = 43,
+			PetBinoculars3 = 44,
+			PetMagicScales3 = 45,
+			PetItemIgnore1 = 46,
+			PetItemIgnore2 = 47,
+			PetItemIgnore3 = 48,
+			Medal = 49,
+			Belt = 50
+		};
+	}
+
+	namespace Inventories {
+		const uint8_t InventoryCount = 5;
+		const uint8_t EquipInventory = 1;
+		const uint8_t UseInventory = 2;
+		const uint8_t SetupInventory = 3;
+		const uint8_t EtcInventory = 4;
+		const uint8_t CashInventory = 5;
+
+		const uint8_t EquippedSlots = 51;
+		const int8_t MaxPetCount = 3;
+		const uint8_t VipRockMax = 10;
+		const uint8_t TeleportRockMax = 5;
+	}
 
 	namespace Items {
 		const int64_t NoExpiration = 150842304000000000LL;
@@ -277,5 +346,35 @@ namespace NLS {
 			ScissorsOfKarma = 5520000,
 			ViciousHammer = 5570000
 		};
+
+		
+		inline uint8_t getInventory(int32_t itemid) { return static_cast<uint8_t>(itemid / 1000000); }
+		inline int32_t getItemType(int32_t itemid) { return (itemid / 10000); }
+		inline int32_t getScrollType(int32_t itemid) { return ((itemid % 10000) - (itemid % 100)); }
+		inline int32_t itemTypeToScrollType(int32_t itemid) { return ((getItemType(itemid) % 100) * 100); }
+		inline bool isArrow(int32_t itemid) { return (getItemType(itemid) == Items::Types::ItemArrow); }
+		inline bool isStar(int32_t itemid) { return (getItemType(itemid) == Items::Types::ItemStar); }
+		inline bool isBullet(int32_t itemid) { return (getItemType(itemid) == Items::Types::ItemBullet); }
+		inline bool isRechargeable(int32_t itemid) { return (isBullet(itemid) || isStar(itemid)); }
+		inline bool isEquip(int32_t itemid) { return (getInventory(itemid) == Inventories::EquipInventory); }
+		inline bool isPet(int32_t itemid) { return (getItemType(itemid) == Items::Types::Pet); }
+		inline bool isStackable(int32_t itemid) { return !(isRechargeable(itemid) || isEquip(itemid) || isPet(itemid)); }
+		inline bool isOverall(int32_t itemid) { return (getItemType(itemid) == Items::Types::ArmorOverall); }
+		inline bool isTop(int32_t itemid) { return (getItemType(itemid) == Items::Types::ArmorTop); }
+		inline bool isBottom(int32_t itemid) { return (getItemType(itemid) == Items::Types::ArmorBottom); }
+		inline bool isShield(int32_t itemid) { return (getItemType(itemid) == Items::Types::ArmorShield); }
+		inline bool is2hWeapon(int32_t itemid) { return (getItemType(itemid) / 10 == 14); }
+		inline bool is1hWeapon(int32_t itemid) { return (getItemType(itemid) / 10 == 13); }
+		inline bool isBow(int32_t itemid) { return (getItemType(itemid) == Items::Types::WeaponBow); }
+		inline bool isCrossbow(int32_t itemid) { return (getItemType(itemid) == Items::Types::WeaponCrossbow); }
+		inline bool isSword(int32_t itemid) { return (getItemType(itemid) == Items::Types::Weapon1hSword || getItemType(itemid) == Items::Types::Weapon2hSword); }
+		inline bool isMace(int32_t itemid) { return (getItemType(itemid) == Items::Types::Weapon1hMace || getItemType(itemid) == Items::Types::Weapon2hMace); }
+		inline bool isGun(int32_t itemid) { return (getItemType(itemid) == Items::Types::WeaponGun); }
+		inline bool isClaw(int32_t itemid) { return (getItemType(itemid) == Items::Types::WeaponClaw); }
+		inline bool isMount(int32_t itemid) { return (getItemType(itemid) == Items::Types::Mount); }
+		inline bool isMedal(int32_t itemid) { return (getItemType(itemid) == Items::Types::Medal); }
+		inline bool isValidInventory(int8_t inv) { return (inv > 0 && inv <= Inventories::InventoryCount); }
+		inline bool isPersonalShop(int32_t itemid) { return (getItemType(itemid) == Items::Types::PersonalShop); }
+		inline bool isMerchantShop(int32_t itemid) { return (getItemType(itemid) == Items::Types::MerchantShop); }
 	}
 }

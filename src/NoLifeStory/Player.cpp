@@ -9,6 +9,7 @@ array<string, 23> emotes = {"default", "hit", "smile", "troubled", "cry", "angry
 
 NLS::Player::Player() : Physics() {
 	state = "jump";
+	attack = false;
 	frame = 0;
 	delay = 0;
 	emote = "default";
@@ -53,7 +54,6 @@ void NLS::Player::ChangeEmote(int id) {
 }
 
 void NLS::Player::SetItemBySlot(int8_t slotid, int32_t itemid) {
-	slotid = slotid;//Who sends negative stuff?
 	switch (slotid) {
 	case 1: cap = itemid; break;
 	case 2: forehead = itemid; break;
@@ -70,6 +70,12 @@ void NLS::Player::SetItemBySlot(int8_t slotid, int32_t itemid) {
 }
 
 void NLS::Player::Draw() {
+	if (attack) {
+		left = right = up = down = false; // Stop movements
+
+	}
+	if (alerted > 0) alerted--;
+
 	Physics::Update();
 	if (y > View::ymax+1000) Map::Load("999999999", "sp");
 	if (emote != "default") {
@@ -100,28 +106,35 @@ void NLS::Player::Draw() {
 	if (!lr or (up^down)) {
 		delay += Time::delta*1000;
 	}
-	if (fh) {
-		if (left^right) {
-			state = "walk1";
-		} else if (down) {
-			state = "prone";
-		} else {
-			state = "stand1";
-		}
-	} else if (lr) {
-		if (lr->l) {
-			state = "ladder";
-		} else {
-			state = "rope";
-		}
-	} else if ((int)Map::node["info"]["swim"]) {
-		state = "fly";
-	} else {
-		state = "jump";
-	}
 
 	auto skinData = WZ["Character"]["00002"+tostring(skin, 3)];
 	auto headData = WZ["Character"]["00012"+tostring(skin, 3)];
+
+	if (!attack) {
+		if (fh) {
+			if (left^right) {
+				state = "walk1";
+			} else if (down) {
+				state = "prone";
+			} else if (alerted > 0) {
+				state = "alert";
+			} else if (weapon && Items::is2hWeapon(weapon)) {
+				state = "stand2";
+			} else {
+				state = "stand1";
+			}
+		} else if (lr) {
+			if (lr->l) {
+				state = "ladder";
+			} else {
+				state = "rope";
+			}
+		} else if ((int)Map::node["info"]["swim"]) {
+			state = "fly";
+		} else {
+			state = "jump";
+		}
+	}
 
 	int d = skinData[state][frame]["delay"];
 	static bool weird = false;
@@ -136,10 +149,15 @@ void NLS::Player::Draw() {
 		}
 	}
 	if (!skinData[state][frame]) {
-		if (state == "stand1" or state == "stand2") {
+		if (state == "stand1" or state == "stand2" or state == "alert") {
 			frame = 1;
 			weird = true;
-		} else {
+		} else {	
+			if (attack) {
+				attack = false;
+				alerted = 400;
+				state = "alert";
+			}
 			frame = 0;
 		}
 	}
@@ -224,4 +242,63 @@ void NLS::Player::Draw() {
 	}
 	nametag.Draw(x, y);
 	guildtag.Draw(x, y+15);
+}
+
+void NLS::Player::DoAttack() {
+	if (attack || !weapon) return;
+
+	// Lets see what attack anims we have.
+	Node wepData = WZ["Character"]["Weapon"][tostring(weapon, 8)];
+	if (down && !wepData["proneStab"]) return; // Skip getting data.
+	/*
+	vector<string> anims;
+	for_each(wepData.begin(), wepData.end(), [&](pair<string, Node> d) {
+		if (d.first == "info" || d.first == "fly" || d.first == "heal" || d.first == "alert" || 
+			d.first == "prone" || d.first == "walk1" || d.first == "walk2") {
+
+		}
+		else {
+			anims.push_back(d.first);
+		}
+	});
+	*/
+	frame = 0;
+	attack = true;
+	string snd = "Attack";
+	if (down) {
+		state = "proneStab";
+	}
+	else {
+		Mob *inrange = GetMobInRange(30);
+		bool regularAttack = true;
+		if (Items::isGun(weapon) || Items::isBow(weapon) || Items::isClaw(weapon)) regularAttack = false;
+		if (!regularAttack) { // Just do regular attack
+			if (Items::isGun(weapon)) {
+				state = "shoot1";
+				snd = "Attack2"; // Shooting sound
+			}
+		}
+		else {
+			if (rand()%2) {
+				state = "stabO";
+				int8_t r = rand()%2;
+				if (r == 0) state += "1";
+				else if (r == 1) state += "2";
+				//else if (r == 2) state += "F"; // Complete walkout.. Special!
+			}
+			else {
+				state = "swingO";
+				int8_t r = rand()%3;
+				if (r == 0) state += "1";
+				else if (r == 1) state += "2";
+				else if (r == 2) state += "3";
+				//else if (r == 3) state += "F"; // Seems like some twist thing of NL card skill?
+			}
+		}
+	}
+	if (wepData["info"]["sfx"]) {
+		attacksnd = WZ["Sound"]["Weapon"][(string)wepData["info"]["sfx"]][snd];
+		attacksnd.Play();
+	}
+	cout << "DEBUG: Anim: " << state << endl;
 }

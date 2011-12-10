@@ -14,7 +14,7 @@ namespace NLS {
 		NameTag nametag;
 		NameTag guildtag;
 		string state;
-		int frame, delay;
+		int frame, delay, alerted;
 		string emote;
 		int emoted, emotef, emotee;
 		int skin, hair, face;
@@ -24,9 +24,11 @@ namespace NLS {
 		int gloves, pants, belt, ring3;
 		int ring4, shoes, petmp, tamingmob;
 		int saddle, mobequip, petacc, pethp;
+		bool attack;
+		void DoAttack();
 		void ChangeEmote(int id);
 		void SetItemBySlot(int8_t slotid, int32_t itemid);
-
+		Sound attacksnd;
 		
 		struct Stats {
 			uint16_t Job, Str, Dex, Int, Luk, AP;

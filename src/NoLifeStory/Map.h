@@ -28,6 +28,5 @@ namespace NLS {
 		extern Sound bgmusic;
 		extern float fade;
 		extern bool Login;
-		//extern Text scrollingHeader;
 	}
 }
