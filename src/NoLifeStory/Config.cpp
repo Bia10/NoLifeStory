@@ -4,6 +4,7 @@
 ////////////////////////////////////////////////////
 #include "Global.h"
 
+int32_t NLS::Config::LoadCharid = 4;
 bool NLS::Profiling = false;
 vector<string> NLS::ProfileMaps;
 
@@ -25,6 +26,7 @@ void NLS::Config::Load() {
 		else if (key == "online") Network::Online = value == "true";
 		else if (key == "ms_ip") Network::IP = value;
 		else if (key == "ms_port") Network::Port = toint(value);
+		else if (key == "diamunds_charid") LoadCharid = toint(value);
 		else if (key == "profile") Profiling = value == "true";
 		else if (key == "ui")
 			if (value == "beta") UI::Style = UI::Beta;//Unsupported
@@ -55,9 +57,11 @@ void NLS::Config::Save() {
 	Write("fullscreen", Fullscreen?"true":"false");
 	if (Network::IP == "") Network::IP = "63.251.217.3";
 	if (Network::Port == 0) Network::Port = 8484;
+	if (LoadCharid == 0) LoadCharid = 4;
 	Write("online", Network::Online?"true":"false");
 	Write("ms_ip", Network::IP);
 	Write("ms_port", tostring(Network::Port));
+	Write("diamunds_charid", tostring(LoadCharid));
 	Write("profile", Profiling?"true":"false");
 	switch (UI::Style) {
 	case UI::Beta: Write("ui", "beta"); break;

@@ -481,6 +481,17 @@ void NLS::Handle::PlayerDespawn(Packet &p) {
 	// TODO: delete other stuff too
 }
 
+void NLS::Handle::PlayerChat(Packet &p) {
+	uint32_t id = p.Read<uint32_t>();
+	Player *player = Map::GetPlayer(id);
+	if (player == nullptr) return;
+	bool gmmsg = p.Read<bool>();
+	string msg = p.Read<string>();
+	bool shout = p.Read<bool>();
+	player->balloon.Set(msg, "1");
+	player->balloonRun = 400;
+}
+
 void NLS::Handle::PlayerMove(Packet &p) {
 	uint32_t id = p.Read<uint32_t>();
 	Player *player = Map::GetPlayer(id);
@@ -682,7 +693,7 @@ void NLS::Send::Pong() {
 void NLS::Send::Pang() {
 	// Loading special character for local testserver.
 	NLS::Packet packet(Packet::Headers[Packet::PlayerLoad]);
-	packet.Write<int32_t>(3); // Special Character!
+	packet.Write<int32_t>(Config::LoadCharid); // Special Character!
 	packet.Send();
 	//NLS::Packet packet(0x18);
 	//packet.Send();
@@ -750,6 +761,13 @@ void NLS::Send::NpcChatStart(int32_t npcid) {
 	NLS::Packet packet(Packet::Headers[Packet::NpcChatStart]);
 	packet.Write<uint8_t>(ThisPlayer->currentPortal);
 	packet.Write<int32_t>(npcid);
+	packet.Send();
+}
+
+void NLS::Send::Chat(const string &msg, bool shout) {
+	Packet packet(0x30);
+	packet.Write<string>(msg);
+	packet.Write<bool>(shout);
 	packet.Send();
 }
 

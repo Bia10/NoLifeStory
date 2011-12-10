@@ -284,7 +284,15 @@ void NLS::UI::TextBox::Click(sf::Mouse::Button b) {
 	}
 }
 void NLS::UI::TextBox::Send() {
-	Map::Load(u8(str), "");
+	if (Network::Connected) {
+		Send::Chat(u8(str), false);
+		//Send::GmMapTeleport(toint(u8(str)));
+	}
+	else {
+		Map::Load(u8(str), "");
+	}
+	ThisPlayer->balloon.Set(u8(str), "6");
+	ThisPlayer->balloonRun = 400;
 	str.clear();
 	UpdateText();
 	index = 0;

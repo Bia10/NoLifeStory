@@ -37,6 +37,7 @@ namespace NLS {
 		string function;
 		NameTag functiontag;
 		ChatBalloon cb;
+		bool showcb;
 	private:
 		AniSprite mapleTVanim;
 		AniSprite mapleTVanimMsg;

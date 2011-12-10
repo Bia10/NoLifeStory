@@ -74,9 +74,9 @@ void NLS::Life::Init() {
 		string scriptname = (string)data["info"]["script"]["0"]["script"];
 		((Npc*)this)->function = (string)str["func"] + (scriptname.empty() ? "" : " (" + scriptname + ")");
 		((Npc*)this)->functiontag.Set(((Npc*)this)->function, NameTag::Life);
-		((Npc*)this)->cb.Set("Welkom op NoLifeStory! Praat tegen mij als je dood wilt. Lol.", "3");
+		((Npc*)this)->cb.Set("Welkom op NoLifeStory! Praat tegen mij als je dood wilt. Lol.", "npc");
+		((Npc*)this)->showcb = true;
 	}
-
 	down = false;
 	up = false;
 	notAPlayer = true;
@@ -109,18 +109,23 @@ void NLS::Life::Update() {
 	if (timeToNextAction-- <= 0) {
 		if (isNPC) {
 			bool walk = rand()%2 == 1;
-			if (walk && data["move"]) {
+			if (walk) {
+				((Npc*)this)->showcb = false;
 				switch (rand()%4) {
 				case 0:
-					left = true;
-					right = false;
-					timeToNextAction = (isNPC ? 0 : 100) + rand() % (type == "n" ? 90 : 100);
-					break;
+					if (data["move"]) {
+						left = true;
+						right = false;
+						timeToNextAction = (isNPC ? 0 : 100) + rand() % (type == "n" ? 90 : 100);
+						break;
+					}
 				case 1:
-					left = false;
-					right = true;
-					timeToNextAction = (isNPC ? 0 : 100) + rand() % (type == "n" ? 90 : 100);
-					break;
+					if (data["move"]) {
+						left = false;
+						right = true;
+						timeToNextAction = (isNPC ? 0 : 100) + rand() % (type == "n" ? 90 : 100);
+						break;
+					}
 				case 2: // Just stand.
 					left = false;
 					right = false;
@@ -136,7 +141,12 @@ void NLS::Life::Update() {
 						Node realnode = node.second;
 						if (!found && realnode["speak"] && rand() % 5 == 2) {
 							chosenNode = realnode;
-							ChangeState(node.first);
+							if (node.first == "info") {
+								ChangeState("stand");
+							}
+							else {
+								ChangeState(node.first);
+							}
 							found = true;
 						}
 					});
@@ -157,6 +167,7 @@ void NLS::Life::Update() {
 						if (found) break;
 					}
 					if (!line.empty()) {
+						((Npc*)this)->showcb = true;
 						((Npc*)this)->cb.Set((string)WZ["String"]["Npc"][id][line], "npc");
 					}
 				}
@@ -193,15 +204,13 @@ void NLS::Life::Update() {
 	if (fh) {
 		if (left^right) {
 			state = "move";
+			ChangeState(state);
 		} 
-		else {
+		else if (!isNPC) {
 			state = defaultState;
+			ChangeState(state);
 		}
-	} 
-	else if ((int)Map::node["info"]["swim"]) {
-		state = "fly";
 	}
-	ChangeState(state);
 	
 	currentAnimation.Step();
 }

@@ -29,6 +29,8 @@ namespace NLS {
 		void ChangeEmote(int id);
 		void SetItemBySlot(int8_t slotid, int32_t itemid);
 		Sound attacksnd;
+		ChatBalloon balloon;
+		int32_t balloonRun;
 		
 		struct Stats {
 			uint16_t Job, Str, Dex, Int, Luk, AP;

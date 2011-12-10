@@ -33,7 +33,7 @@ namespace NLS {
 		uint8_t g = (color << 8) & 0xFF;
 		uint8_t b = (color << 16) & 0xFF;
 		//uint8_t a = (color << 24) & 0xFF;
-		const int32_t maxchars = 15;
+		const int32_t maxchars = 16;
 		for (auto i = 0; i < msg.length(); i += maxchars) {
 			size_t characters = maxchars;
 			if (msg.length() < i + characters) {
@@ -54,38 +54,34 @@ namespace NLS {
 		// Draw topline
 		int32_t left = x - width/2, right = left + width;
 		int32_t top = y - height, bottom = y;
-
-		if (right % n.data->width != 0) {
-			right -= right % n.data->width;// fill the gap
+		int32_t realright = left;
+		for (auto i = left; i < right; i += c.data->width) {
+			realright += c.data->width;
 		}
-		left -= left % 5;
 
-		nw.Draw(left, top);
-		for (auto i = left; i < right; i += n.data->width) 
+		for (auto i = left; i < right; i += n.data->width) {
 			n.Draw(i, top);
-		ne.Draw(right, top);
+			//if (i > realright) realright = i;
+		}
+		nw.Draw(left, top);
+		ne.Draw(realright, top);
 		
 		int32_t counter = top;
 		for (auto i = 0; i < text.size(); i++) {
-			w.Draw(left, counter);
 			for (auto j = left; j < right; j += c.data->width) 
 				c.Draw(j, counter);
-			e.Draw(right, counter);
+			w.Draw(left, counter);
+			e.Draw(realright, counter);
 			text[i].Draw(x - text[i].Width()/2, counter);
 			counter += text[i].Height();
 		}
 		
-		sw.Draw(left, bottom);
-		counter = 0;
 		for (auto i = left; i < right; i += s.data->width) {
-			counter++;
-			if (counter == 2) {
-				arrow.Draw(i, bottom);
-				continue;
-			}
 			s.Draw(i, bottom);
 		}
-		se.Draw(right, bottom);
+		sw.Draw(left, bottom);
+		se.Draw(realright, bottom);
+		arrow.Draw(x, bottom);
 	}
 
 }

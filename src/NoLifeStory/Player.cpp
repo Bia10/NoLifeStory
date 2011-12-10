@@ -10,6 +10,7 @@ array<string, 23> emotes = {"default", "hit", "smile", "troubled", "cry", "angry
 NLS::Player::Player() : Physics() {
 	state = "jump";
 	attack = false;
+	alerted = 0;
 	frame = 0;
 	delay = 0;
 	emote = "default";
@@ -27,6 +28,8 @@ NLS::Player::Player() : Physics() {
 	for (int8_t i = 0; i < 20; i++) {
 		SetItemBySlot(i, 0);
 	}
+	balloonRun = 0;
+	balloon = ChatBalloon();
 }
 
 void NLS::Player::Init() {}
@@ -242,6 +245,11 @@ void NLS::Player::Draw() {
 	}
 	nametag.Draw(x, y);
 	guildtag.Draw(x, y+15);
+
+	if (balloonRun > 0) {
+		balloonRun--;
+		balloon.Draw(x, y - 80);
+	}
 }
 
 void NLS::Player::DoAttack() {

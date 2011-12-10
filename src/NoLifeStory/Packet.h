@@ -85,6 +85,7 @@ namespace NLS {
 		void ChangeMap(Packet&);
 		void PlayerSpawn(Packet&);
 		void PlayerDespawn(Packet&);
+		void PlayerChat(Packet&);
 		void PlayerMove(Packet&);
 		void PlayerEmote(Packet&);
 		void DecodeMovement(Packet&, Physics*);
@@ -103,5 +104,6 @@ namespace NLS {
 		void Revive();
 		void GmMapTeleport(int32_t);
 		void NpcChatStart(int32_t);
+		void Chat(const string &, bool shout = false);
 	}
 }

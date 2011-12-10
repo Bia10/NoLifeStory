@@ -8,6 +8,7 @@ namespace NLS {
 		void Load();
 		void LoadDefault();
 		void Save();
+		extern int32_t LoadCharid;
 	}
 	extern bool Profiling;
 	extern vector<string> ProfileMaps;

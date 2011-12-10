@@ -607,7 +607,7 @@ void NLS::Physics::Jump() {
 
 void NLS::Physics::AddMovement(int8_t action) {
 	int16_t fhid = ThisPlayer->fh == nullptr ? 0 : ThisPlayer->fh->id;
-	int16_t retf = f;
+	int16_t retf = !f;
 	if (lr != nullptr) retf += 14;
 	else if (fh == nullptr) retf += 6;
 	else if (left || ThisPlayer->right) retf += 0;
