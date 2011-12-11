@@ -83,7 +83,7 @@ void NLS::Network::Loop() {
 	if (!Connected and !connecting) {
 		cout << "Trying to connect to " << IP << ":" << Port << endl;
 		Socket.SetBlocking(true);
-		if (Socket.Connect(IP, Port) == sf::Socket::Done) {
+		if (Socket.Connect(IP, Port, 2000) == sf::Socket::Done) {
 			cout << "Connected to server at " << IP << ":" << Port << endl;
 			Socket.SetBlocking(false);
 			Connected = true;

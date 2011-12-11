@@ -106,11 +106,19 @@ void NLS::Life::Draw() {
 }
 
 void NLS::Life::Update() {
+	if (!currentAnimation.repeat) {
+		if (currentAnimation.done) {
+			if (timeToNextAction >= 90000) {
+				timeToNextAction = 700;
+			}
+		}
+	}
 	if (timeToNextAction-- <= 0) {
 		if (isNPC) {
 			bool walk = rand()%2 == 1;
 			if (walk) {
 				((Npc*)this)->showcb = false;
+				currentAnimation.repeat = true;
 				switch (rand()%4) {
 				case 0:
 					if (data["move"]) {
@@ -129,11 +137,12 @@ void NLS::Life::Update() {
 				case 2: // Just stand.
 					left = false;
 					right = false;
-					timeToNextAction = rand() % (type == "n" ? 5000 : 1000);
+					timeToNextAction = rand() % 500;
 					break;
 				}
 			}
 			else {
+				currentAnimation.repeat = false;
 				bool found = false;
 				Node chosenNode;
 				for (auto i = 0; i < 4; i++) {
@@ -168,12 +177,21 @@ void NLS::Life::Update() {
 					}
 					if (!line.empty()) {
 						((Npc*)this)->showcb = true;
-						((Npc*)this)->cb.Set((string)WZ["String"]["Npc"][id][line], "npc");
+						((Npc*)this)->cb.Set((string)WZ["String"]["Npc"][tostring(toint(id))][line], "npc");
+						timeToNextAction = 929999; // ...
 					}
+					else {
+						((Npc*)this)->showcb = false;
+						timeToNextAction = rand() % 500;
+					}
+				}
+				else {
+					((Npc*)this)->showcb = false;
+					ChangeState("stand");
+					timeToNextAction = rand() % 500;
 				}
 				left = false;
 				right = false;
-				timeToNextAction = rand() % 500;
 			}
 		}
 		else {
@@ -206,6 +224,10 @@ void NLS::Life::Update() {
 			state = "move";
 			ChangeState(state);
 		} 
+		else if (isNPC && !((Npc*)this)->showcb) {
+			state = defaultState;
+			ChangeState(state);
+		}
 		else if (!isNPC) {
 			state = defaultState;
 			ChangeState(state);
@@ -222,7 +244,10 @@ void NLS::Npc::Draw() {
 		functiontag.Draw(x, y+15);
 	}
 
-	cb.Draw(x, y - ((Sprite)currentAnimation.n[currentAnimation.frame]).data->height - 10);
+	if (showcb) {
+		Sprite sh = currentAnimation.f;
+		cb.Draw(x, y - sh.data->height - 10);
+	}
 
 	if (data["info"]["MapleTV"] && (int)data["info"]["MapleTV"] == 1) {
 		int32_t mx = x + (int)data["info"]["MapleTVadX"];

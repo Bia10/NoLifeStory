@@ -34,35 +34,65 @@ namespace NLS {
 		uint8_t b = (color << 16) & 0xFF;
 		//uint8_t a = (color << 24) & 0xFF;
 		const int32_t maxchars = 16;
-		for (auto i = 0; i < msg.length(); i += maxchars) {
+		for (auto i = 0; i < msg.length();) {
 			size_t characters = maxchars;
-			if (msg.length() < i + characters) {
+			if (msg.length() <= i + characters) {
 				characters = msg.length() - i;
 			}
+			else if (msg[characters] != ' ') {
+				// Go back and see if we have a space
+				auto curpos = characters + i;
+				bool found = false;
+				for (auto j = curpos; j > curpos - 3; j--) {
+					if (j < 0) break;
+					if (msg.size() <= j) break;
+					if (msg[j] == ' ') {
+						characters = j - i;
+						found = true;
+						break;
+					}
+				}
+				if (!found) {
+					for (auto j = curpos; j < curpos + 3; j++) {
+						if (msg.length() - 1 == j) break;
+						if (msg[j] == ' ') {
+							characters = j - i;
+							found = true;
+							break;
+						}
+					}
+				}
+			}
+			if (characters == 0) break;
 			Text txt;
 			txt.Set(Text::Color(r, g, b/*, a*/) + u32(msg.substr(i, characters)), 12);
 			text.push_back(txt);
+			i += characters;
 		}
 	}
 
 	inline void ChatBalloon::Draw(int32_t x, int32_t y) {
+		if (text.size() == 0) return; //...
+
 		int32_t width = 0, height = 0;
 		for (auto i = 0; i < text.size(); i++) {
 			if (width < text[i].Width()) width = text[i].Width();
 			height += text[i].Height();
 		}
 		// Draw topline
+		if (width == 0) {
+			width = 10;
+		}
+
 		int32_t left = x - width/2, right = left + width;
 		int32_t top = y - height, bottom = y;
 		int32_t realright = left;
-		for (auto i = left; i < right; i += c.data->width) {
-			realright += c.data->width;
-		}
 
-		for (auto i = left; i < right; i += n.data->width) {
+		for (auto i = left; i < right; i += c.data->width)
+			realright += c.data->width;
+
+		for (auto i = left; i < right; i += n.data->width)
 			n.Draw(i, top);
-			//if (i > realright) realright = i;
-		}
 		nw.Draw(left, top);
 		ne.Draw(realright, top);
 		

@@ -429,17 +429,19 @@ void NLS::Img::Parse() {
 	};
 	Resolve = [&Resolve](Node n) {
 		if (n["UOL"]) {
-			string s = n["UOL"];
-			vector <string> parts = split(s, '/');
-			Node nn = n[".."];
-			for (auto it = parts.begin(); it != parts.end(); it++) {
-				if (!nn) {
-					break;
+			while (n["UOL"]) { // UOL -> UOL- > data.. :/
+				string s = n["UOL"];
+				vector <string> parts = split(s, '/');
+				Node nn = n[".."];
+				for (auto it = parts.begin(); it != parts.end(); it++) {
+					if (!nn) {
+						break;
+					}
+					nn = nn[*it];
 				}
-				nn = nn[*it];
-			}
-			if (nn) {
-				n.Assign(nn);
+				if (nn) {
+					n.Assign(nn);
+				}
 			}
 		} else {
 			for (auto it = n.begin(); it != n.end(); it++) {
