@@ -44,19 +44,6 @@ namespace NLS {
 		void Write(T v) {
 			data.insert(data.end(), (uint8_t*)&v, (uint8_t*)&v+sizeof(T));
 		}
-
-		
-		enum HeaderSendTypes {
-			Pong,
-			PlayerLoad,
-			PlayerMove,
-			PlayerEmote,
-			PortalUse,
-			PortalUseScripted,
-			NpcChatStart
-		};
-
-		static map<HeaderSendTypes, uint16_t> Headers;
 		static map<uint16_t, function<void(Packet&)>> Handlers;
 	};
 	template <>

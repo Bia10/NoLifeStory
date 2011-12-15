@@ -154,3 +154,61 @@ void NLS::Network::Loop() {
 void NLS::Network::Unload() {
 
 }
+
+map<string, vector<string>> NLS::Network::RequestLogin(const string &user, const string &pass) {
+	sf::TcpSocket sock;
+	map<string, vector<string>> ret;
+	sock.SetBlocking(true);
+	
+	if (sock.Connect("www.nexon.net", 80, 2000) == sf::Socket::Done) {
+		sock.SetBlocking(false);
+		string content = "userID=" + user + "&password=" + pass;
+		
+		stringstream out;
+		out << "POST " << "/api/v001/account/login HTTP/1.0" << endl;
+		out << "Content-Length: " << content.size() << endl;
+		out << "Content-Type: application/x-www-form-urlencoded" << endl;
+		out << "Host: www.nexon.net" << endl;
+		out << "User-Agent: Diamondos-Network-Code-LOL/1.3.3.7" << endl;
+		out << endl;
+		out << content;
+		cout << out.str() << endl;
+		string data = out.str();
+		auto senderr = sock.Send(data.c_str(), data.size());
+		
+		sock.SetBlocking(true);
+
+		// :D
+		char *recvData = new char[2048];
+		int curpos = 0, lastpos = 0;
+		size_t received = 0;
+		while (true) {
+			sock.Receive(recvData + curpos, (size_t)1, received);
+			if (curpos >= 2) {
+				if (recvData[curpos - 1] == '\r' && recvData[curpos] == '\n') {
+					int len = curpos - lastpos;
+					// Got data. Now push it to the list
+					data = string(recvData + lastpos, len - 1);
+					if (data.substr(0, 4) != "HTTP") {
+						size_t dubbelepunt = data.find_first_of(':', 0);
+						if (dubbelepunt == string::npos) {
+							// No data. Break and try to read content next.
+							break;
+						}
+					
+						ret[data.substr(0, dubbelepunt)].push_back(data.substr(dubbelepunt + 2));
+					}
+					lastpos = curpos + 1;
+				}
+			}
+			curpos += received;
+		}
+
+		if (ret.find("Content-Length") != ret.end()) {
+			int length = toint(ret["Content-Length"][0]);
+			sock.Receive(recvData, (size_t)length, received);
+			ret["Content-Data"].push_back(string(recvData, length));
+		}
+	}
+	return ret;
+}

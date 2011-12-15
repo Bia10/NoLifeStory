@@ -9,6 +9,29 @@ bool NLS::bMute = false;
 float bgVolume;
 
 void NLS::Init() {
+	auto responses = Network::RequestLogin("Diamondo25", "lolno");
+
+	if (responses.find("Set-Cookie") != responses.end()) {
+		string device_id, npp, session, authToken;
+		auto cookies = responses["Set-Cookie"];
+		for (vector<string>::iterator iter = cookies.begin(); iter != cookies.end(); iter++) {
+			string cookieData = *iter, 
+				key = cookieData.substr(0, cookieData.find_first_of('=')),
+				value = cookieData.substr(cookieData.find_first_of('=') + 1);
+			value = value.substr(0, value.find_first_of(';'));
+			if (key == "device_id") device_id = value;
+			else if (key == "NPP") npp = value;
+			else if (key == "session") session = value;
+			else if (key == "authToken") authToken = value;
+		}
+
+		cout << "Device ID: " << device_id << endl;
+		cout << "NPP: " << npp << endl;
+		cout << "Session: " << session << endl;
+		cout << "AuthToken: " << authToken << endl;
+	}
+	getchar();
+	
 	Time::Reset();
 	Config::Load();
 	locale::global(locale(""));
