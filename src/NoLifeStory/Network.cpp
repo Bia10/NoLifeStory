@@ -6,6 +6,7 @@
 
 bool NLS::Network::Online = true;
 bool NLS::Network::Connected = false;
+bool NLS::Network::IsLogin = true;
 uint16_t NLS::Network::Version;
 string NLS::Network::Patch;
 uint8_t NLS::Network::SendIV[4];
@@ -207,7 +208,7 @@ map<string, vector<string>> NLS::Network::RequestLogin(const string &user, const
 		if (ret.find("Content-Length") != ret.end()) {
 			int length = toint(ret["Content-Length"][0]);
 			sock.Receive(recvData, (size_t)length, received);
-			ret["Content-Data"].push_back(string(recvData, length));
+			ret["Content"].push_back(string(recvData, length));
 		}
 	}
 	return ret;

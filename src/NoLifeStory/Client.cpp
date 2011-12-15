@@ -29,6 +29,7 @@ void NLS::Init() {
 		cout << "NPP: " << npp << endl;
 		cout << "Session: " << session << endl;
 		cout << "AuthToken: " << authToken << endl;
+		cout << responses["Content"][0] << endl;
 	}
 	getchar();
 	

@@ -11,8 +11,7 @@ namespace NLS {
 		void Unload();
 		map<string, vector<string>> RequestLogin(const string &, const string &);
 		extern sf::TcpSocket Socket;
-		extern bool Online;
-		extern bool Connected;
+		extern bool Online, Connected, IsLogin;
 		extern uint16_t Version;
 		extern string Patch;
 		extern uint8_t SendIV[4];

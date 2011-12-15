@@ -716,10 +716,10 @@ void NLS::Send::Handshake() {
 
 	uint16_t subversion = toint(Network::Patch);
 	uint16_t header = 0;
-	if (Network::Locale == 0x08) {
+	if (Network::Locale == Locales::Global) {
 		if (Network::Version >= 101) header = 0x14;
 	}
-	else if (Network::Locale == 0x09) {
+	else if (Network::Locale == Locales::Sea) {
 		if (Network::Version >= 112) header = 0x01; // No shit!
 	}
 
@@ -728,25 +728,55 @@ void NLS::Send::Handshake() {
 	packet.Write<uint16_t>(Network::Version);
 	packet.Write<uint16_t>(subversion);
 	packet.Send();
-	Login("lolno", "NP12:auth02:9:5511796:B7z9T2rUrM7nrPIE2KEYL4gGpj8UPFe~ZSt3Hs9x4alDevrtaso31wJyNzHnDm93_b~mlH27jJ2jVahldLgfeqN1UgxLnq9jz8XEOguyrMfM2fHkWMUmvwADwRDsNldF3_y4ExqI1tBt0JTwNFhxx4eq~vSy37Wrtdb0mmE5Y5tSECYjdZYFNdGg_9JZqrdpoys~j7A2ZINF8S2dWILhOi~SsFaqScGJ");
+
+	if (Network::Locale == Locales::Global) {
+		string username, password;
+		cout << "Username: ";
+		getline(cin, username);
+		cout << "Password: ";
+		getline(cin, password);
+
+		auto responses = Network::RequestLogin(username, password);
+
+		if (responses.find("Set-Cookie") != responses.end()) {
+			string device_id, npp, session, authToken;
+			auto cookies = responses["Set-Cookie"];
+			for (vector<string>::iterator iter = cookies.begin(); iter != cookies.end(); iter++) {
+				string cookieData = *iter, 
+					key = cookieData.substr(0, cookieData.find_first_of('=')),
+					value = cookieData.substr(cookieData.find_first_of('=') + 1);
+				value = value.substr(0, value.find_first_of(';'));
+				if (key == "device_id") device_id = value;
+				else if (key == "NPP") npp = value;
+				else if (key == "session") session = value;
+				else if (key == "authToken") authToken = value;
+			}
+
+			cout << "Device ID: " << device_id << endl;
+			cout << "NPP: " << npp << endl;
+			cout << "Session: " << session << endl;
+			cout << "AuthToken: " << authToken << endl;
+			cout << responses["Content"][0] << endl;
+
+			Packet packet(0x15);
+			packet.Write<string>(password);
+			packet.Write<string>(npp);
+			packet.Write<int32_t>(0);
+			packet.Write<int16_t>(0);
+			packet.Write<int64_t>(2060196618);
+			packet.Write<int32_t>(64976);
+			packet.Write<int16_t>(0);
+			packet.Write<int16_t>(2);
+			packet.Write<int32_t>(0);
+			packet.Write<int16_t>(256);
+			packet.Write<string>(""); // Base64 shit, w/ client start time at the beginning in GMT form: "Óm42011 12 11 14:32"
+			packet.Write<string>("2.80.1000"); // I have no fucking idea.
+			packet.Send();
+		}
+	}
 }
 
 void NLS::Send::Login(const string &username, const string &password) {
-	Packet packet(0x15);
-	packet.Write<string>(username);
-	packet.Write<string>(password);
-	packet.Write<int32_t>(0);
-	packet.Write<int16_t>(0);
-	packet.Write<int64_t>(2060196618);
-	packet.Write<int32_t>(64976);
-	packet.Write<int16_t>(0);
-	packet.Write<int16_t>(2);
-	packet.Write<int32_t>(0);
-	packet.Write<int16_t>(256);
-	packet.Write<string>("0200MjAxMSAxMiAxMSAxNDozNgarMQi7AOKkMcN7PZ6dA44zWRe798o1clki33T0acbTr7VrNMoL+orD49X/6i5f86kF+1+rnD9j+vODH/nd6RJCQlsHOPAAAlsehFr2GZy21l65Spor5WUbu6I/hZOsnH40+L3Dsy8bjDTF2pCXCJur/gkq5y84nCJq2GacWFWbp3KkygLEF0SuyHxlrT7NGYElOBxcOKE3R78676pwZBf2C4nY2X1fnPtEDbOhPcQgVug2ULJdOLuDBO5jExNQXuJ3RTC7Grc762zJUy2dp4ZJgHNqg33F0J9fBodpFkCp4lMlQ4Aot7c1Zh0mU5WURdyWYzaL0qpkAwj5tijbyeHM8AM6i71VjD8XOmVUBYIRIa0EGe929Bfagb+jokp3nQ8PDHx6Sp6ana2bEaHPSwitFKjJlOIBx8Plqu6XmsiIfPLbGX4R5how/WXjjLWKzSZA98EyYE4NThLawihGDZAQPnCK49v+NG/2nC/XkjIUTztLX4xoR2mCvCRgCSpoaJ6FiCdrl9nUjCcREHflYABuAOTMnwgxVShkuv4BwLSE4h4Nt4vRIoEly0AEFQPm9283jkOoMryLYNzMmdeMaRj2wI74YHyknXgVfrYZb/fq9A/M9ttWP65kZB9QCy8rESTWutr0SXOwTbAQ/29xq/hy4NNIR+0+r7Z68Nj0J5pD76zOWlpO594r/DI9HtXfLWSl6zBojcWh27Uoh+SKCv32766WL8tw/3YlYKoi4V1m1uG3D7gX40Scr/O0qAgGTkG2lXJeWPWzvqQqbRkpTwBTlgneuuyKL1LVDNDTepCMpq0DOgzZZGLHQpm7di4EfcY="); 
-	// Base64 shit, w/ client start time at the beginning in GMT form: "Óm42011 12 11 14:32"
-	packet.Write<string>("2.80.1000"); // I have no fucking idea.
-	packet.Send();
 }
 
 void NLS::Send::PlayerEmote(int32_t emote) {
