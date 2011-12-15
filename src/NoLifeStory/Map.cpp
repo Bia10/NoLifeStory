@@ -165,12 +165,9 @@ void NLS::Map::Load() {
 }
 
 void NLS::Map::Draw() {
-	for (uint32_t i = 0; i < Backgrounds.size(); ++i) {
-		Backgrounds[i]->Draw();
-	}
-	for (uint32_t i = 0; i < Reactor::Reactors.size(); ++i) {
-		Reactor::Reactors[i]->Draw();
-	}
+	for_each(Backgrounds.begin(), Backgrounds.end(), [](Back *r){ r->Draw(); });
+	for_each(Reactor::Reactors.begin(), Reactor::Reactors.end(), [](Reactor *r){ r->Draw(); });
+
 	for (uint8_t i = 0; i < 8; i++) {
 		Layers[i].Draw();
 		for_each(Life::Mobs.begin(), Life::Mobs.end(), [&i](pair<uint32_t, Mob*> p){if (p.second->layer == i) p.second->Draw();});

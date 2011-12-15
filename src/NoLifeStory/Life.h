@@ -38,6 +38,13 @@ namespace NLS {
 		NameTag functiontag;
 		ChatBalloon cb;
 		bool showcb;
+		bool hastxt;
+		struct SpeakMessage {
+			string state;
+			vector<string> msgs;
+			int32_t totalDuration;
+		};
+		vector<SpeakMessage> speakMessages;
 	private:
 		AniSprite mapleTVanim;
 		AniSprite mapleTVanimMsg;

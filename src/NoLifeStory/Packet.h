@@ -97,6 +97,7 @@ namespace NLS {
 		void Pong();
 		void Pang();
 		void Handshake();
+		void Login(const string &, const string &);
 		void PlayerMove();
 		void PlayerEmote(int32_t);
 		void UsePortal(const string &);
@@ -105,5 +106,22 @@ namespace NLS {
 		void GmMapTeleport(int32_t);
 		void NpcChatStart(int32_t);
 		void Chat(const string &, bool shout = false);
+		namespace PacketType {
+			enum Header {
+				Login,
+				Version,
+				RequestWorld,
+				RequestWorldBack,
+				Pong,
+				LoadCharacter,
+				PlayerMove,
+				PlayerEmote,
+				PlayerChat,
+				NpcRequestTalk,
+				UsePortal,
+				UsePortalScripted,
+			};
+		}
+		extern map<PacketType::Header, uint16_t> SendHeaders;
 	}
 }

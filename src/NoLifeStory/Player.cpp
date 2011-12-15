@@ -30,6 +30,11 @@ NLS::Player::Player() : Physics() {
 	}
 	balloonRun = 0;
 	balloon = ChatBalloon();
+	attackFrame = -1;
+	cap = 1002140;
+	weapon = 1322013;
+	pants = 1062007;
+	clothes = 1042003;
 }
 
 void NLS::Player::Init() {}
@@ -243,6 +248,15 @@ void NLS::Player::Draw() {
 	for (auto it = sparts.begin(); it != sparts.end(); it++) {
 		it->spr.Draw(it->x, it->y, f);
 	}
+	if (attackFrame != -1) {
+		if (attackAfterImgNode[attackFrame++]) {
+			Sprite spr = attackAfterImgNode[attackFrame];
+		}
+		else {
+			attackFrame = -1;
+		}
+	}
+
 	nametag.Draw(x, y);
 	guildtag.Draw(x, y+15);
 

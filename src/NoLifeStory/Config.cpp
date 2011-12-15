@@ -40,7 +40,7 @@ void NLS::Config::Load() {
 void NLS::Config::LoadDefault() {
 	Paths.push_back("");
 	Paths.push_back("C:/Nexon/MapleStory/");
-	Network::IP = "63.251.217.3";
+	Network::IP = "8.31.98.53";
 	Network::Port = 8484;
 	Config::Save();
 }
@@ -55,7 +55,7 @@ void NLS::Config::Save() {
 	Write("mindfuck", Mindfuck?"true":"false");
 	Write("mute", bMute?"true":"false");
 	Write("fullscreen", Fullscreen?"true":"false");
-	if (Network::IP == "") Network::IP = "63.251.217.3";
+	if (Network::IP == "") Network::IP = "8.31.98.53"; // New GMS LoginServer IP
 	if (Network::Port == 0) Network::Port = 8484;
 	if (LoadCharid == 0) LoadCharid = 4;
 	Write("online", Network::Online?"true":"false");

@@ -17,7 +17,7 @@ void NLS::Init() {
 	freopen("nolifestory.log", "a", stdout);
 	freopen("nolifestory.log", "a", stderr);
 #endif
-	cout << endl << "Initializing NoLifeStory" << endl;
+	cout << "Initializing NoLifeStory" << endl;
 	cout << "아무 라이프 스토리 없음" << endl;
 	cout << "유니 코드는 사용" << endl;
 	cout << "Using locale: " << locale().name() << endl;

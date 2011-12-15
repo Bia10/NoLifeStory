@@ -132,6 +132,9 @@ void NextIV(uint8_t *oldiv) {
 #pragma region Packet Handlers
 
 void NLS::Handle::Init() {
+	Packet::Handlers.clear();
+	Send::SendHeaders.clear();
+
 	uint8_t locale = Network::Locale;
 	uint16_t version = Network::Version;
 	uint16_t subversion = toint(Network::Patch);
@@ -153,6 +156,21 @@ void NLS::Handle::Init() {
 			Packet::Headers[Packet::PortalUse] = 0x0025;
 			Packet::Headers[Packet::PortalUseScripted] = 0x0063;
 			Packet::Headers[Packet::NpcChatStart] = 0x0039;
+			Send::SendHeaders[Send::PacketType::Login] = 0x01;
+			Send::SendHeaders[Send::PacketType::Pong] = 0x19;
+			Send::SendHeaders[Send::PacketType::LoadCharacter] = 0x14;
+			Send::SendHeaders[Send::PacketType::PlayerChat] = 0x30;
+			Send::SendHeaders[Send::PacketType::PlayerMove] = 0x28;
+			Send::SendHeaders[Send::PacketType::NpcRequestTalk] = 0x39;
+			Send::SendHeaders[Send::PacketType::RequestWorldBack] = 0x18;
+			Send::SendHeaders[Send::PacketType::UsePortal] = 0x25;
+			Send::SendHeaders[Send::PacketType::UsePortalScripted] = 0x63;
+		}
+		else if (version == 104) {
+
+			Send::SendHeaders[Send::PacketType::Version] = 0x14;
+			Send::SendHeaders[Send::PacketType::Login] = 0x15;
+			Send::SendHeaders[Send::PacketType::Pong] = 0x2E;
 		}
 	}
 
@@ -716,6 +734,25 @@ void NLS::Send::Handshake() {
 	packet.Write<uint8_t>(Network::Locale);
 	packet.Write<uint16_t>(Network::Version);
 	packet.Write<uint16_t>(subversion);
+	packet.Send();
+	Login("lolno", "NP12:auth02:9:5511796:B7z9T2rUrM7nrPIE2KEYL4gGpj8UPFe~ZSt3Hs9x4alDevrtaso31wJyNzHnDm93_b~mlH27jJ2jVahldLgfeqN1UgxLnq9jz8XEOguyrMfM2fHkWMUmvwADwRDsNldF3_y4ExqI1tBt0JTwNFhxx4eq~vSy37Wrtdb0mmE5Y5tSECYjdZYFNdGg_9JZqrdpoys~j7A2ZINF8S2dWILhOi~SsFaqScGJ");
+}
+
+void NLS::Send::Login(const string &username, const string &password) {
+	Packet packet(0x15);
+	packet.Write<string>(username);
+	packet.Write<string>(password);
+	packet.Write<int32_t>(0);
+	packet.Write<int16_t>(0);
+	packet.Write<int64_t>(2060196618);
+	packet.Write<int32_t>(64976);
+	packet.Write<int16_t>(0);
+	packet.Write<int16_t>(2);
+	packet.Write<int32_t>(0);
+	packet.Write<int16_t>(256);
+	packet.Write<string>("0200MjAxMSAxMiAxMSAxNDozNgarMQi7AOKkMcN7PZ6dA44zWRe798o1clki33T0acbTr7VrNMoL+orD49X/6i5f86kF+1+rnD9j+vODH/nd6RJCQlsHOPAAAlsehFr2GZy21l65Spor5WUbu6I/hZOsnH40+L3Dsy8bjDTF2pCXCJur/gkq5y84nCJq2GacWFWbp3KkygLEF0SuyHxlrT7NGYElOBxcOKE3R78676pwZBf2C4nY2X1fnPtEDbOhPcQgVug2ULJdOLuDBO5jExNQXuJ3RTC7Grc762zJUy2dp4ZJgHNqg33F0J9fBodpFkCp4lMlQ4Aot7c1Zh0mU5WURdyWYzaL0qpkAwj5tijbyeHM8AM6i71VjD8XOmVUBYIRIa0EGe929Bfagb+jokp3nQ8PDHx6Sp6ana2bEaHPSwitFKjJlOIBx8Plqu6XmsiIfPLbGX4R5how/WXjjLWKzSZA98EyYE4NThLawihGDZAQPnCK49v+NG/2nC/XkjIUTztLX4xoR2mCvCRgCSpoaJ6FiCdrl9nUjCcREHflYABuAOTMnwgxVShkuv4BwLSE4h4Nt4vRIoEly0AEFQPm9283jkOoMryLYNzMmdeMaRj2wI74YHyknXgVfrYZb/fq9A/M9ttWP65kZB9QCy8rESTWutr0SXOwTbAQ/29xq/hy4NNIR+0+r7Z68Nj0J5pD76zOWlpO594r/DI9HtXfLWSl6zBojcWh27Uoh+SKCv32766WL8tw/3YlYKoi4V1m1uG3D7gX40Scr/O0qAgGTkG2lXJeWPWzvqQqbRkpTwBTlgneuuyKL1LVDNDTepCMpq0DOgzZZGLHQpm7di4EfcY="); 
+	// Base64 shit, w/ client start time at the beginning in GMT form: "Óm42011 12 11 14:32"
+	packet.Write<string>("2.80.1000"); // I have no fucking idea.
 	packet.Send();
 }
 

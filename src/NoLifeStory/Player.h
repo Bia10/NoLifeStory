@@ -31,6 +31,8 @@ namespace NLS {
 		Sound attacksnd;
 		ChatBalloon balloon;
 		int32_t balloonRun;
+		Node attackAfterImgNode;
+		int32_t attackFrame;
 		
 		struct Stats {
 			uint16_t Job, Str, Dex, Int, Luk, AP;
