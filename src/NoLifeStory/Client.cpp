@@ -9,7 +9,12 @@ bool NLS::bMute = false;
 float bgVolume;
 
 void NLS::Init() {
-	auto responses = Network::RequestLogin("Diamondo25", "lolno");
+	string username, password;
+	cout << "Username: ";
+	getline(cin, username);
+	cout << "Password: ";
+	getline(cin, password);
+	auto responses = Network::RequestLogin(username, password);
 
 	if (responses.find("Set-Cookie") != responses.end()) {
 		string device_id, npp, session, authToken;

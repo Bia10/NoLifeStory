@@ -166,14 +166,13 @@ map<string, vector<string>> NLS::Network::RequestLogin(const string &user, const
 		string content = "userID=" + user + "&password=" + pass;
 		
 		stringstream out;
-		out << "POST " << "/api/v001/account/login HTTP/1.0" << endl;
+		out << "POST " << "/api/v001/account/login" << " HTTP/1.0" << endl;
+		out << "Host: www.nexon.net" << endl;
 		out << "Content-Length: " << content.size() << endl;
 		out << "Content-Type: application/x-www-form-urlencoded" << endl;
-		out << "Host: www.nexon.net" << endl;
 		out << "User-Agent: Diamondos-Network-Code-LOL/1.3.3.7" << endl;
 		out << endl;
 		out << content;
-		cout << out.str() << endl;
 		string data = out.str();
 		auto senderr = sock.Send(data.c_str(), data.size());
 		
@@ -185,6 +184,9 @@ map<string, vector<string>> NLS::Network::RequestLogin(const string &user, const
 		size_t received = 0;
 		while (true) {
 			sock.Receive(recvData + curpos, (size_t)1, received);
+			if (received == 0) {
+				//break;
+			}
 			if (curpos >= 2) {
 				if (recvData[curpos - 1] == '\r' && recvData[curpos] == '\n') {
 					int len = curpos - lastpos;
