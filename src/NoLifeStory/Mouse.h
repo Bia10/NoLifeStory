@@ -26,6 +26,7 @@ namespace NLS {
 		};
 		extern StateEnum State;
 		extern int x, y;
+		extern int checkx, checky;
 		extern UI::Element* over;
 		extern int cx, cy;
 	}

@@ -149,6 +149,7 @@ void NLS::Handle::Init() {
 			Packet::Handlers[0xA7] = &NLS::Handle::PlayerMove;
 			Packet::Handlers[0xAF] = &NLS::Handle::PlayerEmote;
 			Packet::Handlers[0xE3] = &NLS::Handle::NpcSpawn;
+
 			Send::SendHeaders[Send::PacketType::Login] = 0x01;
 			Send::SendHeaders[Send::PacketType::Pong] = 0x19;
 			Send::SendHeaders[Send::PacketType::LoadCharacter] = 0x14;
@@ -160,10 +161,21 @@ void NLS::Handle::Init() {
 			Send::SendHeaders[Send::PacketType::UsePortalScripted] = 0x63;
 		}
 		else if (version == 104) {
+			Packet::Handlers[0x00] = &NLS::Handle::Login;
+			Packet::Handlers[0x03] = &NLS::Handle::WorldSelectResult;
+			Packet::Handlers[0x11] = &NLS::Handle::Ping;
+			Packet::Handlers[0x0A] = &NLS::Handle::WorldListResult;
+			Packet::Handlers[0x0B] = &NLS::Handle::WorldCharacters;
+			Packet::Handlers[0xB2] = &NLS::Handle::SkippedObjects;
 
 			Send::SendHeaders[Send::PacketType::Version] = 0x14;
 			Send::SendHeaders[Send::PacketType::Login] = 0x15;
+			Send::SendHeaders[Send::PacketType::ChannelSelectRequest] = 0x19;
+			Send::SendHeaders[Send::PacketType::WorldSelectRequest] = 0x1A;
+			Send::SendHeaders[Send::PacketType::RequestWorld] = 0x1F;
+			Send::SendHeaders[Send::PacketType::RequestWorldBack] = 0x20;
 			Send::SendHeaders[Send::PacketType::Pong] = 0x2E;
+			Send::SendHeaders[Send::PacketType::HSStartup] = 0x37;
 		}
 	}
 
@@ -172,6 +184,224 @@ void NLS::Handle::Init() {
 
 void NLS::Handle::Ping(Packet &p) {
 	Send::Pong();
+}
+
+void NLS::Handle::Login(Packet &p) {
+	uint16_t op = p.Read<uint16_t>();
+	if (op != 0x00) {
+		cout << "Uh oh! Login Errors! Error code: " << op << endl;
+		return;
+	}
+	if (Network::Locale == Locales::Global) {
+		if (Network::Version >= 104) {
+			p.Read<int32_t>(); // Unknown
+			int32_t userid = p.Read<int32_t>(); // User ID
+			p.Read<int32_t>(); // More unk. Might contain admin byte lol
+			p.Read<int8_t>(); // 0x95??
+			string username = p.Read<string>();
+
+			cout << "Logged in as '" << username << "' (userID: " << userid << ")" << endl;
+			
+			p.Read<int32_t>(); // 0x00000003 ??
+			// strange stuff!
+
+			Send::RequestWorlds(false);
+		}
+	}
+}
+
+int32_t peopleOnline = 0;
+void NLS::Handle::WorldListResult(Packet &p) {
+	int8_t id = p.Read<int8_t>();
+	if (id == -1) {
+		// Return. Or do something more like showing the world list lol
+		cout << "People online: " << peopleOnline << endl;
+		peopleOnline = 0;
+		View::LoginStage(1); // World Select
+		return;
+	}
+
+
+	string name = p.Read<string>();
+	int8_t ribbon = p.Read<int8_t>();
+	string eventMsg = p.Read<string>();
+	int16_t expRate = p.Read<int16_t>(); // EXP rate (100)
+	int16_t dropRate = p.Read<int16_t>(); // Drop rate (100)
+	p.Read<int8_t>(); // 0... always?
+
+	UIWorldSelectScreen::WorldInfo *wi = new UIWorldSelectScreen::WorldInfo(id, ribbon, expRate, dropRate, name, eventMsg);
+
+	u32string clr;
+	switch (wi->ribbon) {
+	case 1: clr = Text::Color(0, 0, 255); break; // Event - blue
+	case 2: clr = Text::Color(0, 255, 0); break; // New - green
+	case 3: clr = Text::Color(255, 0, 0); break; // Hot - red
+	default: clr = Text::Color(0, 0, 0); break; // None or invalid - White
+	}
+	wi->worldDrawName.Set(clr + u32(wi->name), 12);
+
+	uint8_t channels = p.Read<uint8_t>(); // Fun fact: the change channel screen has images for 50 (!) channels.
+	for (auto i = 0; i < channels; i++) {
+		UIWorldSelectScreen::WorldInfo::ChannelInfo ci;
+		ci.name = p.Read<string>();
+		ci.population = p.Read<int32_t>();
+		ci.worldID = p.Read<int8_t>(); // Still unknown why this is sent. It does a check though
+		ci.id = p.Read<int8_t>(); // Thanks for seperating this!
+		ci.state = p.Read<int8_t>(); // EMS uses this for multi-language purpose!
+		wi->channels[i] = ci;
+		peopleOnline += ci.population;
+	}
+
+	int16_t msgs = p.Read<int16_t>(); // World screen messages. Bit buggy lol afaik never used too. Starts at top-left of world 0 tab
+	for (auto i = 0; i < msgs; i++) {
+		int16_t x = p.Read<int16_t>();
+		int16_t y = p.Read<int16_t>();
+		string msg = p.Read<string>();
+	}
+	WorldSelectScreen->worlds.push_back(wi);
+}
+
+void NLS::Handle::WorldSelectResult(Packet &p) {
+	int8_t icon = p.Read<int8_t>();
+	int8_t msg = p.Read<int8_t>();
+	// lol
+	WorldSelectScreen->ChannelSelectWindow->visible = true;
+}
+
+void NLS::Handle::WorldCharacters(Packet &p) {
+	int8_t unk = p.Read<int8_t>();
+	if (unk != 0) {
+		cout << "Error on server side (worldchars): " << (int16_t)unk << endl;
+		return;
+	}
+	int8_t characters = p.Read<int8_t>();
+	
+	for (auto i = 0; i < characters; i++) {
+		cout << "Loop " << i << ". Pos: " << p.pos << endl;
+		LoginPlayer *lp = new LoginPlayer();
+		lp->charid = p.Read<int32_t>();
+		
+		lp->name = p.ReadStringLen(13);
+		lp->gender = p.Read<int8_t>();
+		lp->skin = p.Read<int8_t>();
+		lp->face = p.Read<int32_t>();
+		lp->hair = p.Read<int32_t>();
+
+		p.Read<int64_t>(); // Taken out Pet ID's
+		p.Read<int64_t>();
+		p.Read<int64_t>();
+
+		lp->level = p.Read<uint8_t>();
+
+		LoginPlayer::Stats stats;
+		stats.Job = p.Read<int16_t>(); // job
+		stats.Str = p.Read<int16_t>(); // Strength
+		stats.Dex = p.Read<int16_t>(); // Dex
+		stats.Int = p.Read<int16_t>(); // Int
+		stats.Luk = p.Read<int16_t>(); // Luk
+		if (Network::Locale == Locales::Global && Network::Version < 81) {
+			stats.HP = p.Read<int16_t>(); // HP
+			stats.MaxHP = p.Read<int16_t>(); // MaxHP
+			stats.MP = p.Read<int16_t>(); // MP
+			stats.MaxMP = p.Read<int16_t>(); // MaxMP
+		}
+		else {
+			stats.HP = p.Read<int32_t>(); // HP
+			stats.MaxHP = p.Read<int32_t>(); // MaxHP
+			stats.MP = p.Read<int32_t>(); // MP
+			stats.MaxMP = p.Read<int32_t>(); // MaxMP
+		}
+		stats.AP = p.Read<int16_t>(); // AP
+		cout << "0| Pos: " << p.pos << endl;
+		if (is_extendsp_job(stats.Job)) {
+			cout << "!!! Extended SP job: " << stats.Job << endl;
+			int8_t spslots = p.Read<int8_t>();
+			for (auto i = 0; i < spslots; i++) {
+				int8_t slot = p.Read<int8_t>();
+				int8_t amount = p.Read<int8_t>();
+				if (slot < stats.SP.size()) {
+					stats.SP[slot] = amount;
+				}
+			}
+		}
+		else {
+			stats.SP[0] = p.Read<int16_t>();
+		}
+		stats.EXP = p.Read<int32_t>(); // EXP
+		if (Network::Locale == Locales::Global && Network::Version > 102) {
+			stats.Fame = p.Read<int32_t>(); // Fame
+		}
+		else {
+			stats.Fame = p.Read<int16_t>(); // Fame
+		}
+		stats.GachaEXP = p.Read<int32_t>(); // GachaEXP
+		lp->stats = stats;
+
+		int32_t mapid = p.Read<int32_t>();
+		int8_t mappos = p.Read<int8_t>();
+
+		p.Read<int32_t>(); // Added around .62 (777 ?)
+		p.Read<int8_t>(); // Buddylist length
+		if (Network::Locale == Locales::Global && Network::Version > 102) {
+			p.Read<int16_t>(); // 0?
+			p.Read<int32_t>(); // Datetime? (2011121802 | 2011-12-18 02)
+			
+			p.Read<int64_t>(); // 0?
+			p.Read<int64_t>(); // 0?
+			p.Read<int32_t>(); // 0?
+			p.Read<int64_t>(); // 2?
+			p.Read<int64_t>(); // 0?
+			p.Read<int64_t>(); // UNK RANDOM
+
+			p.Read<int32_t>(); // ?
+			p.Read<int16_t>(); // 
+		}
+		
+		cout << "1| Pos: " << p.pos << endl;
+		lp->gender = p.Read<int8_t>();
+		lp->skin = p.Read<int8_t>();
+		lp->face = p.Read<int32_t>();
+		p.Read<int32_t>(); // 100?
+		p.Read<int8_t>(); // hairslot
+		lp->hair = p.Read<int32_t>();
+		
+		cout << "2| Pos: " << p.pos << endl;
+		// Shown
+		while (true) {
+			int8_t slot = p.Read<int8_t>();
+			if (slot == -1) break;
+			int itemid = p.Read<int>(); // ItemID
+			cout << "Itemid: " << itemid << " Slot: " << (int) slot << endl;
+			lp->SetItemBySlot(slot, itemid);
+		}
+		cout << "3| Pos: " << p.pos << endl;
+		// Hidden
+		while (true) {
+			int8_t slot = p.Read<int8_t>();
+			if (slot == -1) break;
+			p.Read<int32_t>(); // ItemID
+		}
+		p.Read<int32_t>(); // Special Cash Weapon
+
+		p.Read<int32_t>(); // Pet IDs
+		p.Read<int32_t>();
+		p.Read<int32_t>();
+		if (Network::Locale == Locales::Global && Network::Version > 81) {
+			p.Read<int16_t>();
+		}
+		cout << "4| Pos: " << p.pos << endl;
+
+		bool rank = p.Read<bool>();
+		if (rank) {
+			p.Read<int32_t>(); // 
+			p.Read<int32_t>();
+			p.Read<int32_t>();
+			p.Read<int32_t>();
+		}
+		lp->nametag.Set(lp->name, NameTag::Normal);
+		CharSelectScreen->worldCharacters.push_back(lp);
+	}
+	View::LoginStage(2); // Char select.
 }
 
 void NLS::Handle::ChangeMap(Packet &p) {
@@ -219,10 +449,18 @@ void NLS::Handle::ChangeMap(Packet &p) {
 		stats.Dex = p.Read<int16_t>(); // Dex
 		stats.Int = p.Read<int16_t>(); // Int
 		stats.Luk = p.Read<int16_t>(); // Luk
-		stats.HP = p.Read<int16_t>(); // HP
-		stats.MaxHP = p.Read<int16_t>(); // MaxHP
-		stats.MP = p.Read<int16_t>(); // MP
-		stats.MaxMP = p.Read<int16_t>(); // MaxMP
+		if (Network::Locale == Locales::Global && Network::Version < 81) {
+			stats.HP = p.Read<int16_t>(); // HP
+			stats.MaxHP = p.Read<int16_t>(); // MaxHP
+			stats.MP = p.Read<int16_t>(); // MP
+			stats.MaxMP = p.Read<int16_t>(); // MaxMP
+		}
+		else {
+			stats.HP = p.Read<int32_t>(); // HP
+			stats.MaxHP = p.Read<int32_t>(); // MaxHP
+			stats.MP = p.Read<int32_t>(); // MP
+			stats.MaxMP = p.Read<int32_t>(); // MaxMP
+		}
 		stats.AP = p.Read<int16_t>(); // AP
 		if (is_extendsp_job(stats.Job)) {
 			int8_t spslots = p.Read<int8_t>();
@@ -696,8 +934,17 @@ void NLS::Handle::NpcSpawn(Packet &packet) {
 	Life::Npcs[Life::NpcStart++] = npc;
 }
 
+void NLS::Handle::SkippedObjects(Packet &packet) {
+	// contains a list of skipped objects.
+	int8_t amount = packet.Read<int8_t>();
+	for (auto i = 0; i < amount; i++) {
+		string value = packet.Read<string>();
+		Obj::skipTags.push_back(value);
+	}
+}
+
 void NLS::Send::Pong() {
-	Packet packet(0x19);
+	Packet packet(SendHeaders[PacketType::Pong]);
 	packet.Send();
 }
 
@@ -708,6 +955,33 @@ void NLS::Send::Pang() {
 	//packet.Send();
 	//NLS::Packet packet(0x18);
 	//packet.Send();
+}
+
+void NLS::Send::RequestWorlds(bool back) {
+	for (auto iter = WorldSelectScreen->worlds.begin(); iter != WorldSelectScreen->worlds.end(); iter++) {
+		delete *iter;
+	}
+	WorldSelectScreen->worlds.clear();
+	Packet p(SendHeaders[back ? PacketType::RequestWorldBack : PacketType::RequestWorld]);
+	p.Send();
+}
+
+void NLS::Send::WorldSelectRequest() {
+	Packet p(SendHeaders[PacketType::WorldSelectRequest]);
+	p.Write<int16_t>(WorldSelectScreen->selectedWorld);
+	p.Send();
+}
+
+void NLS::Send::ChannelSelectRequest() {
+	cout << "Channel Select. World: " << (int16_t)WorldSelectScreen->selectedWorld << " Channel: " << (int16_t)WorldSelectScreen->ChannelSelectWindow->selectedChannel << endl;
+	Packet p(SendHeaders[PacketType::ChannelSelectRequest]);
+	p.Write<int8_t>(2);
+	p.Write<int8_t>(WorldSelectScreen->selectedWorld);
+	p.Write<int8_t>(WorldSelectScreen->ChannelSelectWindow->selectedChannel);
+	p.Write<uint16_t>(43200); // ???
+	p.Write<int8_t>(0); // ???
+	p.Write<int8_t>(11); // ???
+	p.Send();
 }
 
 void NLS::Send::Handshake() {
@@ -723,44 +997,22 @@ void NLS::Send::Handshake() {
 		if (Network::Version >= 112) header = 0x01; // No shit!
 	}
 
-	NLS::Packet packet(header);
+	Packet packet(header);
 	packet.Write<uint8_t>(Network::Locale);
 	packet.Write<uint16_t>(Network::Version);
 	packet.Write<uint16_t>(subversion);
 	packet.Send();
+}
 
+void NLS::Send::Login(const string &username, const string &password) {
+	Packet packet(SendHeaders[PacketType::Login]);
+
+	// TODO
 	if (Network::Locale == Locales::Global) {
-		string username, password;
-		cout << "Username: ";
-		getline(cin, username);
-		cout << "Password: ";
-		getline(cin, password);
-
-		auto responses = Network::RequestLogin(username, password);
-
-		if (responses.find("Set-Cookie") != responses.end()) {
-			string device_id, npp, session, authToken;
-			auto cookies = responses["Set-Cookie"];
-			for (vector<string>::iterator iter = cookies.begin(); iter != cookies.end(); iter++) {
-				string cookieData = *iter, 
-					key = cookieData.substr(0, cookieData.find_first_of('=')),
-					value = cookieData.substr(cookieData.find_first_of('=') + 1);
-				value = value.substr(0, value.find_first_of(';'));
-				if (key == "device_id") device_id = value;
-				else if (key == "NPP") npp = value;
-				else if (key == "session") session = value;
-				else if (key == "authToken") authToken = value;
-			}
-
-			cout << "Device ID: " << device_id << endl;
-			cout << "NPP: " << npp << endl;
-			cout << "Session: " << session << endl;
-			cout << "AuthToken: " << authToken << endl;
-			cout << responses["Content"][0] << endl;
-
-			Packet packet(0x15);
+		if (Network::Version <= 88) {
+			packet.Write<string>(username);
 			packet.Write<string>(password);
-			packet.Write<string>(npp);
+			// Machine ID stuff. Just put it here :)
 			packet.Write<int32_t>(0);
 			packet.Write<int16_t>(0);
 			packet.Write<int64_t>(2060196618);
@@ -768,25 +1020,59 @@ void NLS::Send::Handshake() {
 			packet.Write<int16_t>(0);
 			packet.Write<int16_t>(2);
 			packet.Write<int32_t>(0);
-			packet.Write<int16_t>(256);
-			packet.Write<string>(""); // Base64 shit, w/ client start time at the beginning in GMT form: "Óm42011 12 11 14:32"
-			packet.Write<string>("2.80.1000"); // I have no fucking idea.
-			packet.Send();
+		}
+		else {
+			auto responses = Network::RequestLogin(username, password);
+
+			if (responses.find("Set-Cookie") != responses.end()) {
+				string device_id, npp, session, authToken;
+				auto cookies = responses["Set-Cookie"];
+				for (vector<string>::iterator iter = cookies.begin(); iter != cookies.end(); iter++) {
+					string cookieData = *iter, 
+						key = cookieData.substr(0, cookieData.find_first_of('=')),
+						value = cookieData.substr(cookieData.find_first_of('=') + 1);
+					value = value.substr(0, value.find_first_of(';'));
+					if (key == "device_id") device_id = value;
+					else if (key == "NPP") npp = value;
+					else if (key == "session") session = value;
+					else if (key == "authToken") authToken = value;
+				}
+
+				cout << "Device ID: " << device_id << endl;
+				cout << "NPP: " << npp << endl;
+				cout << "Session: " << session << endl;
+				cout << "AuthToken: " << authToken << endl;
+				cout << responses["Content"][0] << endl;
+				packet.Write<string>(password);
+				packet.Write<string>(npp);
+				packet.Write<int32_t>(0);
+				packet.Write<int16_t>(0);
+				packet.Write<int64_t>(2060196618);
+				packet.Write<int32_t>(64976);
+				packet.Write<int16_t>(0);
+				packet.Write<int16_t>(2);
+				packet.Write<int32_t>(0);
+				packet.Write<int16_t>(256);
+				packet.Write<string>(""); // Base64 shit, w/ client start time at the beginning in GMT form: "Óm42011 12 11 14:32"
+				packet.Write<string>("2.80.1000"); // I have no fucking idea.
+			}
+			else {
+				cout << "Failed logging in on website!" << endl;
+				return;
+			}
 		}
 	}
-}
-
-void NLS::Send::Login(const string &username, const string &password) {
+	packet.Send();
 }
 
 void NLS::Send::PlayerEmote(int32_t emote) {
-	NLS::Packet packet(0x32);
+	NLS::Packet packet(SendHeaders[PacketType::PlayerEmote]);
 	packet.Write<int32_t>(emote);
 	packet.Send();
 }
 
 void NLS::Send::UsePortal(const string &portalname) {
-	NLS::Packet packet(0x25);
+	NLS::Packet packet(SendHeaders[PacketType::UsePortal]);
 	packet.Write<uint8_t>(ThisPlayer->currentPortal);
 	packet.Write<int32_t>(-1);
 	packet.Write<string>(portalname);
@@ -794,14 +1080,14 @@ void NLS::Send::UsePortal(const string &portalname) {
 }
 
 void NLS::Send::UsePortalScripted(const string &portalname) {
-	NLS::Packet packet(0x63);
+	NLS::Packet packet(SendHeaders[PacketType::UsePortalScripted]);
 	packet.Write<uint8_t>(ThisPlayer->currentPortal);
 	packet.Write<string>(portalname);
 	packet.Send();
 }
 
 void NLS::Send::Revive() {
-	NLS::Packet packet(0x25);
+	NLS::Packet packet(SendHeaders[PacketType::UsePortal]);
 	packet.Write<uint8_t>(ThisPlayer->currentPortal);
 	packet.Write<int32_t>(0);
 	packet.Write<string>("");
@@ -811,28 +1097,28 @@ void NLS::Send::Revive() {
 }
 
 void NLS::Send::GmMapTeleport(int32_t mapid) {
-	NLS::Packet packet(0x25);
+	NLS::Packet packet(SendHeaders[PacketType::UsePortal]);
 	packet.Write<uint8_t>(ThisPlayer->currentPortal);
 	packet.Write<int32_t>(mapid);
 	packet.Send();
 }
 
 void NLS::Send::NpcChatStart(int32_t npcid) {
-	NLS::Packet packet(0x39);
+	NLS::Packet packet(SendHeaders[PacketType::NpcRequestTalk]);
 	packet.Write<uint8_t>(ThisPlayer->currentPortal);
 	packet.Write<int32_t>(npcid);
 	packet.Send();
 }
 
 void NLS::Send::Chat(const string &msg, bool shout) {
-	Packet packet(0x30);
+	Packet packet(SendHeaders[PacketType::PlayerChat]);
 	packet.Write<string>(msg);
 	packet.Write<bool>(shout);
 	packet.Send();
 }
 
 void NLS::Send::PlayerMove() {
-	NLS::Packet p(0x28);
+	NLS::Packet p(SendHeaders[PacketType::PlayerMove]);
 	p.Write<int8_t>(ThisPlayer->currentPortal);
 	p.Write<int32_t>(0); // Move X and Y??
 	p.Write<int16_t>(ThisPlayer->x);

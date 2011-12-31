@@ -9,6 +9,7 @@ namespace NLS {
 		void Init();
 		void Loop();
 		void Unload();
+		void Connect(string IP, uint16_t port);
 		map<string, vector<string>> RequestLogin(const string &, const string &);
 		extern sf::TcpSocket Socket;
 		extern bool Online, Connected, IsLogin;

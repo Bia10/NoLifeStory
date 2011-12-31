@@ -70,9 +70,15 @@ void NLS::View::Reset() {
 	relative = false;
 }
 
-void NLS::View::LoginStage(int n) {
-	tx = -400;
-	ty = (n?-32:12)-600*n;
+void NLS::View::LoginStage(int n, bool first) {
+	if (first) {
+		Move(7, ((n?-32:12)-600*n));
+	}
+	else {
+		Follow(7, ((n?-32:12)-600*n));
+	}
+	//x = tx = vx = 5; //-400;
+	//y = ty = vy = (n?-32:12)-600*n;
 }
 
 void NLS::View::Follow(int x, int y) {

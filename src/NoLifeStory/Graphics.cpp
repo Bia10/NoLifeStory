@@ -122,7 +122,7 @@ void NLS::Graphics::Draw() {
 		glBlendEquation(GL_FUNC_ADD);
 		Map::fade -= 2*Time::delta;
 	}
-	window->SetTitle("NoLifeStory::FrameRate = "+tostring((int)Time::fps));
+	window->SetTitle("NoLifeStory::FrameRate = " + tostring((int)Time::fps) + " | Current Map: " + Map::curmap);
 	window->Display();
 #ifdef DEBUG
 	switch (glGetError()) {

@@ -111,6 +111,8 @@
     <ClInclude Include="..\..\src\NoLifeStory\KeyMap.h" />
     <ClInclude Include="..\..\src\NoLifeStory\LadderRope.h" />
     <ClInclude Include="..\..\src\NoLifeStory\Life.h" />
+    <ClInclude Include="..\..\src\NoLifeStory\LoginPlayer.h" />
+    <ClInclude Include="..\..\src\NoLifeStory\LoginScreen.h" />
     <ClInclude Include="..\..\src\NoLifeStory\MapleRNG.h" />
     <ClInclude Include="..\..\src\NoLifeStory\Mouse.h" />
     <ClInclude Include="..\..\src\NoLifeStory\NameTag.h" />
@@ -161,6 +163,8 @@
     <ClCompile Include="..\..\src\NoLifeStory\Keys.cpp" />
     <ClCompile Include="..\..\src\NoLifeStory\LadderRope.cpp" />
     <ClCompile Include="..\..\src\NoLifeStory\Life.cpp" />
+    <ClCompile Include="..\..\src\NoLifeStory\LoginPlayer.cpp" />
+    <ClCompile Include="..\..\src\NoLifeStory\LoginScreen.cpp" />
     <ClCompile Include="..\..\src\NoLifeStory\Mouse.cpp" />
     <ClCompile Include="..\..\src\NoLifeStory\NameTag.cpp" />
     <ClCompile Include="..\..\src\NoLifeStory\Packet.cpp" />

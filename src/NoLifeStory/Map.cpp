@@ -53,6 +53,7 @@ void NLS::Map::Load() {
 	Node mn;
 	if (nextmap == "MapLogin" || nextmap == "MapLogin2") {
 		mn = WZ["UI"][nextmap];
+		UIWorldSelectScreen::Init();
 		Login = true;
 		Network::Online = true;
 	} else {
@@ -157,8 +158,15 @@ void NLS::Map::Load() {
 		View::ymax += 128;
 		View::ymin -= View::height;
 	}
-	if(Login) View::LoginStage(0);
-	teleport(nextportal, true);
+	if (Login) {
+		View::ymin -= 4400;
+		View::xmin = 1;
+		View::xmax = 10;
+		View::LoginStage(0, false);
+	}
+	else {
+		teleport(nextportal, true);
+	}
 	nextmap = "";
 	nextportal = "";
 	nextportalID = -1;
@@ -167,9 +175,15 @@ void NLS::Map::Load() {
 void NLS::Map::Draw() {
 	for_each(Backgrounds.begin(), Backgrounds.end(), [](Back *r){ r->Draw(); });
 	for_each(Reactor::Reactors.begin(), Reactor::Reactors.end(), [](Reactor *r){ r->Draw(); });
-
+	
 	for (uint8_t i = 0; i < 8; i++) {
 		Layers[i].Draw();
+		if (i == 0 && Login && WorldSelectScreen->selectedWorld != -1) {
+			int viewx = WorldSelectScreen->x + 95;
+			int viewy = WorldSelectScreen->y + 180;
+			Sprite spr = WZ["UI"]["Login"]["WorldSelect"]["scroll"][0][0];
+			spr.Draw(viewx, viewy);
+		}
 		for_each(Life::Mobs.begin(), Life::Mobs.end(), [&i](pair<uint32_t, Mob*> p){if (p.second->layer == i) p.second->Draw();});
 		for_each(Life::Npcs.begin(), Life::Npcs.end(), [&i](pair<uint32_t, Npc*> p){if (p.second->layer == i) p.second->Draw();});
 		for_each(Players.begin(), Players.end(), [&i](pair<uint32_t, Player*> p){if (p.second->layer == i) p.second->Draw();});
@@ -183,7 +197,13 @@ void NLS::Map::Draw() {
 		Foregrounds[i]->Draw();
 	}
 	DrawClock();
-	if(Login) {
+	if (Login) {
+		LoginScreen->Draw();
+		WorldSelectScreen->DrawWorlds();
+		CharSelectScreen->Draw();
+		if (NLS::LoginErrorMsg != nullptr) {
+			NLS::LoginErrorMsg->Draw();
+		}
 		NLS::Sprite frameImg = WZ["UI"]["Login"]["Common"]["frame"];
 		frameImg.Draw(View::x+400,View::y+300);
 	}

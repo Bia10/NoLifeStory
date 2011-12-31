@@ -133,23 +133,34 @@ void NLS::Network::Loop() {
 			if (ghead) {
 				if (!Receive(header, 4)) return;
 				uint32_t llen = *(uint32_t*)header;
-				len = (llen>>16)^llen;
+				len = (llen >> 16) ^ llen;
 				ghead = false;
 				pos = 0;
 			} else {
 				if (!Receive(data, len)) return;
 				Packet p(data, len);
 				p.Decrypt();
-				cout << "Received Packet: " << p.ToString() << endl;
 				uint16_t opcode = p.Read<uint16_t>();
 				auto& f = p.Handlers[opcode];
 				if (f) f(p);
-				else cerr << "No packet handler for opcode: " << hex << uppercase << setw(4) << setfill('0') << opcode << endl;
+				else {
+					cerr << "No packet handler for opcode: " << hex << uppercase << setw(4) << setfill('0') << opcode << endl;
+					cout << "Received Packet: " << p.ToString() << endl;
+				}
 				ghead = true;
 				pos = 0;
 			}
 		}
 	}
+}
+
+void NLS::Network::Connect(string IP, uint16_t port) {
+	if (Connected)
+		Socket.Disconnect();
+	Socket.SetBlocking(false);
+	Connected = false;
+	Network::IP = IP;
+	Network::Port = port;
 }
 
 void NLS::Network::Unload() {
@@ -164,6 +175,7 @@ map<string, vector<string>> NLS::Network::RequestLogin(const string &user, const
 	if (sock.Connect("www.nexon.net", 80, 2000) == sf::Socket::Done) {
 		sock.SetBlocking(false);
 		string content = "userID=" + user + "&password=" + pass;
+
 		
 		stringstream out;
 		out << "POST " << "/api/v001/account/login" << " HTTP/1.0" << endl;
@@ -183,9 +195,9 @@ map<string, vector<string>> NLS::Network::RequestLogin(const string &user, const
 		int curpos = 0, lastpos = 0;
 		size_t received = 0;
 		while (true) {
-			sock.Receive(recvData + curpos, (size_t)1, received);
-			if (received == 0) {
-				//break;
+			auto ans = sock.Receive(recvData + curpos, (size_t)1, received);
+			if (ans != sf::Socket::Done) {
+				break;
 			}
 			if (curpos >= 2) {
 				if (recvData[curpos - 1] == '\r' && recvData[curpos] == '\n') {

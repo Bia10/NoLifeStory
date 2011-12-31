@@ -5,8 +5,10 @@
 #include "Global.h"
 
 set <NLS::Obj*> NLS::Obj::Objs;
+vector<string> NLS::Obj::skipTags;
 
 void NLS::Obj::Load(Node n) {
+	skipTags.clear();
 	for (auto it = Objs.begin(); it != Objs.end(); it++) {
 		delete *it;
 	}
@@ -31,6 +33,7 @@ void NLS::Obj::Load(Node n) {
 			o->rx = on["rx"];
 			o->ry = on["ry"];
 			o->f = (int)on["f"];
+			o->tag = on["tags"]; // used in login?
 			Node d = od[0];
 			o->repeat = !(int)d["repeat"];
 			o->movetype = d["moveType"];
@@ -49,6 +52,7 @@ void NLS::Obj::Load(Node n) {
 
 void NLS::Obj::Draw() {
 	spr.Step();
+	if (!tag.empty() && find(Obj::skipTags.begin(), Obj::skipTags.end(), tag) != Obj::skipTags.end()) return;
 	int ax = 0;
 	int ay = 0;
 	double ang = 0;

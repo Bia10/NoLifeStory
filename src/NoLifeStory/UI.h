@@ -37,8 +37,8 @@ namespace NLS {
 			int width, height;
 			Window* parent;
 			vector<Element*> children;
-		private:
-			Element(const Element&);
+		//private:
+			//Element(const Element&);
 		};
 		class Image: public Element {
 		public:
@@ -46,14 +46,25 @@ namespace NLS {
 			void Draw();
 			Node node;
 		};
+		class Label: public Element {
+		public:
+			Label(int x, int y, u32string text, int size = 14) : Element(x, y, 0, 0) {
+				txt.Set(text, size);
+			}
+			void Draw() {
+				txt.Draw(CalcX(), CalcY());
+			}
+			Text txt;
+		};
 		class Button : public Element {
 		public:
-			Button(int x, int y, Node n, function<void()> action);
+			Button(int x, int y, int width, int height, Node n, function<void()> action, const u32string &text = u32(""));
 			void Click(sf::Mouse::Button);
 			void Draw();
 			function<void()> action;
 			NLS::Node node;
 			bool disabled, pressed;
+			Text text;
 		};
 		class CheckBox : public Element {
 		public:
@@ -65,8 +76,12 @@ namespace NLS {
 		};
 		class TextBox : public Element {
 		public:
-			TextBox(int x, int y, int width)
-				: index(0), size(0), sel1(0), sel2(0), selecting(false), Element(x, y, width, 14) {}
+			TextBox(int x, int y, int width, function<void()> onEnter, function<void()> onTab, bool password = false, char passchar = '*')
+				: index(0), size(0), sel1(0), sel2(0), selecting(false), Element(x, y, width, 14), password(password), passwordChar(passchar),
+				actionEnter(onEnter), actionTab(onTab)
+			{
+				
+			}
 			static TextBox* Active;
 			void Send();
 			void Draw();
@@ -75,21 +90,35 @@ namespace NLS {
 			void HandleKey(sf::Event::KeyEvent);
 			void UpdateText();
 			void UpdateSelection();
+			void Clear();
 			u32string str;
 			int index, size;
 			Text text;
 			int sel1, sel2;
-			bool selecting;
+			bool selecting, password;
+			char passwordChar;
+			function<void()> actionEnter, actionTab;
 		};
 		class ScrollBar : public Element {
 		public:
 			int LineHeight;
 			int CurLine;
 		};
+		class LSPageButton : public Element {
+		public:
+			LSPageButton(int x, int y, int width, int height, Node n, function<void()> action, const u32string &text = u32(""));
+			void Click(sf::Mouse::Button);
+			void Draw();
+			function<void()> action;
+			NLS::Node node;
+			bool pressed;
+			Text text;
+		};
 		class StatusBar : public Window {
 		public:
 			StatusBar();
 			void Draw();
+			void OnChatBoxEnter();
 			TextBox text;
 			/*TextBox tChat;//Yuck
 

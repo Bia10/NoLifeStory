@@ -7,6 +7,7 @@ namespace NLS {
 	void Init();
 	bool Loop();
 	void Unload();
+	extern map<int32_t, string> stringItems;
 	extern bool Mindfuck;
 	extern bool bMute;
 }

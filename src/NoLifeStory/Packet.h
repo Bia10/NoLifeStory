@@ -68,6 +68,10 @@ namespace NLS {
 	}
 	namespace Handle {
 		void Init();
+		void Login(Packet&);
+		void WorldListResult(Packet&);
+		void WorldSelectResult(Packet&);
+		void WorldCharacters(Packet&);
 		void Ping(Packet&);
 		void ChangeMap(Packet&);
 		void PlayerSpawn(Packet&);
@@ -79,10 +83,14 @@ namespace NLS {
 		Item * DecodeItem(Packet&);
 		void MobSpawn(Packet&);
 		void NpcSpawn(Packet&);
+		void SkippedObjects(Packet&);
 	}
 	namespace Send {
 		void Pong();
 		void Pang();
+		void RequestWorlds(bool);
+		void WorldSelectRequest();
+		void ChannelSelectRequest();
 		void Handshake();
 		void Login(const string &, const string &);
 		void PlayerMove();
@@ -96,9 +104,12 @@ namespace NLS {
 		namespace PacketType {
 			enum Header {
 				Login,
+				HSStartup,
 				Version,
 				RequestWorld,
 				RequestWorldBack,
+				WorldSelectRequest,
+				ChannelSelectRequest,
 				Pong,
 				LoadCharacter,
 				PlayerMove,

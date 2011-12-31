@@ -37,11 +37,15 @@ void NLS::Key::Init() {
 	Set(sf::Keyboard::Num8, [](){ThisPlayer->ChangeEmote(20);});
 	Set(sf::Keyboard::Num9, [](){ThisPlayer->ChangeEmote(21);});
 	Set(sf::Keyboard::Num0, [](){ThisPlayer->ChangeEmote(22);});
-	Set(sf::Keyboard::Z, [](){if (sf::Keyboard::IsKeyPressed(sf::Keyboard::LControl)) {
-		auto l = WZ["Character"]["Cap"];
-		
-	}
-	});
+	Set(sf::Keyboard::Q, [](){View::LoginStage(0);});
+	Set(sf::Keyboard::W, [](){View::LoginStage(1);});
+	Set(sf::Keyboard::E, [](){View::LoginStage(2);});
+	Set(sf::Keyboard::R, [](){View::LoginStage(3);});
+	Set(sf::Keyboard::T, [](){View::LoginStage(4);});
+	Set(sf::Keyboard::Y, [](){View::LoginStage(5);});
+	Set(sf::Keyboard::U, [](){View::LoginStage(6);});
+	Set(sf::Keyboard::I, [](){View::LoginStage(7);});
+	Set(sf::Keyboard::O, [](){View::LoginStage(8);});
 	Left = Right = Up = Down = false;
 }
 
@@ -59,9 +63,12 @@ void NLS::Key::Handle(sf::Event e) {
 				Config::Save();
 				Graphics::Init();
 			} else {
-				UI::TextBox::Active->Send();
+				UI::TextBox::Active->actionEnter();
 				UI::TextBox::Active = nullptr;
 			}
+			break;
+		case sf::Keyboard::Tab:
+			UI::TextBox::Active->actionTab();
 			break;
 		case sf::Keyboard::Escape:
 			UI::TextBox::Active = nullptr;

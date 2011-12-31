@@ -25,20 +25,22 @@ void Crypto::TransformData(uint8_t* IV, uint8_t* data, uint32_t len) {
 	for (int i = 0; i < 16; i += 4) {
 		memcpy(BigIV+i, IV, 4);
 	}
-	AESGen.SetParameters(256, 128);
-	AESGen.StartEncryption(AESKey2);
 
 	uint32_t pos = 0;
-	uint8_t first = 4;
+	uint8_t first = 1;
+	int32_t tpos = 0;
 	while (len > pos) {
-		if (len > pos + 1460 - first) {
-			AESGen.TransformOFB(data + pos, BigIV, 1460 - first);
+		AESGen.SetParameters(256, 128);
+		AESGen.StartEncryption(AESKey2);
+		tpos = 1460 - first * 4;
+		if (len > pos + tpos) {
+			AESGen.TransformOFB(data + pos, BigIV, tpos);
 		}
 		else {
 			AESGen.TransformOFB(data + pos, BigIV, len - pos);
 		}
-		pos += 1460 - first;
-		first = 0;
+		pos += tpos;
+		if (first) first = 0;
 	}
 }
 

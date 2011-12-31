@@ -6,38 +6,10 @@
 
 bool NLS::Mindfuck = false;
 bool NLS::bMute = false;
+map<int32_t, string> NLS::stringItems;
 float bgVolume;
 
 void NLS::Init() {
-	string username, password;
-	cout << "Username: ";
-	getline(cin, username);
-	cout << "Password: ";
-	getline(cin, password);
-	auto responses = Network::RequestLogin(username, password);
-
-	if (responses.find("Set-Cookie") != responses.end()) {
-		string device_id, npp, session, authToken;
-		auto cookies = responses["Set-Cookie"];
-		for (vector<string>::iterator iter = cookies.begin(); iter != cookies.end(); iter++) {
-			string cookieData = *iter, 
-				key = cookieData.substr(0, cookieData.find_first_of('=')),
-				value = cookieData.substr(cookieData.find_first_of('=') + 1);
-			value = value.substr(0, value.find_first_of(';'));
-			if (key == "device_id") device_id = value;
-			else if (key == "NPP") npp = value;
-			else if (key == "session") session = value;
-			else if (key == "authToken") authToken = value;
-		}
-
-		cout << "Device ID: " << device_id << endl;
-		cout << "NPP: " << npp << endl;
-		cout << "Session: " << session << endl;
-		cout << "AuthToken: " << authToken << endl;
-		cout << responses["Content"][0] << endl;
-	}
-	getchar();
-	
 	Time::Reset();
 	Config::Load();
 	locale::global(locale(""));
@@ -100,6 +72,23 @@ void NLS::Init() {
 
 	Key::Init();
 	initDone("AES Keys");
+
+	auto addItems = [](Node val) {
+		for_each(val.begin(), val.end(), [](pair<string, Node> p) {
+			stringItems[toint(p.first)] = p.second["name"];
+		});
+	};
+
+	Node stringwz = WZ["String"];
+	Node val = stringwz["Eqp"]["Eqp"];
+	for_each(val.begin(), val.end(), [&](pair<string, Node> p) {
+		addItems(p.second);
+	});
+	addItems(stringwz["Etc"]["Etc"]);
+	addItems(stringwz["Cash"]);
+	addItems(stringwz["Ins"]);
+	addItems(stringwz["Consume"]);
+	cout << "Loaded " << stringItems.size() << " items." << endl;
 
 	Time::Step();
 	cout << "Initialization complete" << endl;

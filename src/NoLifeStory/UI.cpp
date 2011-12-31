@@ -11,13 +11,13 @@ list<NLS::UI::Window*> NLS::UI::Window::All;
 
 #pragma region UI
 void NLS::UI::Init() {
-	new StatusBar();
+	//new StatusBar();
 	//new LoginDialog();
 	//new BaseGUI();
 }
 void NLS::UI::Draw() {
 	for_each(Window::begin(), Window::end(), [](Window* w){
-		if (w->visible and w->login == Map::Login) w->Draw();
+		if (w->visible and !w->login) w->Draw();
 	});
 }
 #pragma endregion
@@ -37,13 +37,13 @@ void NLS::UI::Window::Add(Element* e) {
 void NLS::UI::Window::Draw() {
 	if (!visible) return;
 	if (Style == Clean) {
-		glBindTexture(GL_TEXTURE_2D, 0);
+		/*glBindTexture(GL_TEXTURE_2D, 0);
 		glBegin(GL_QUADS);
 		glVertex2i(x, y);
 		glVertex2i(x+width, y);
 		glVertex2i(x+width, y+height);
 		glVertex2i(x, y+height);
-		glEnd();
+		glEnd();*/
 	}
 	for_each(Elements.begin(), Elements.end(), [&](Element* e){
 		e->Draw();
@@ -144,9 +144,9 @@ void NLS::UI::LoginDialog::Draw() {
 #pragma endregion
 
 #pragma region StatusBar
-NLS::UI::StatusBar::StatusBar() : Window(0, 500, 800, 100, false, false, true, false), text(20, 20, 400) {
+NLS::UI::StatusBar::StatusBar() : Window(0, 500, 800, 100, false, false, true, false), text(20, 20, 400, [this]() { this->OnChatBoxEnter(); }, [](){}) {
 	Add(&text);
-	Add(new Button(500, 20, Node(), [](){Map::Load("100000000", "");}));
+	Add(new Button(500, 20, 80, 60, Node(), [](){Map::Load("100000000", "");}));
 	Key::Set(sf::Keyboard::Return, [this](){TextBox::Active = &this->text;});
 /*
 NLS::UI::BaseGUI::BaseGUI() : Window(512, 515+84, 0, 0, false, false,false) , tChat(25,0,0), 
@@ -224,6 +224,17 @@ void NLS::UI::BaseGUI::Draw() {
 }
 */
 }
+void NLS::UI::StatusBar::OnChatBoxEnter() {
+	if (Network::Connected) {
+		Send::Chat(u8(text.str), false);
+		//Send::GmMapTeleport(toint(u8(str)));
+	}
+	else {
+		Map::Load(u8(text.str), "");
+	}
+	ThisPlayer->balloon.Set(u8(text.str), "6");
+	ThisPlayer->balloonRun = 400;
+}
 #pragma endregion
 
 #pragma region Image
@@ -233,30 +244,112 @@ void NLS::UI::Image::Draw() {
 #pragma endregion
 
 #pragma region Button
-NLS::UI::Button::Button(int x, int y, Node n, function<void()> action)
-	:Element(x, y, 80, 40), node(n), action(action) {}
+NLS::UI::Button::Button(int x, int y, int width, int height, Node n, function<void()> action, const u32string &text) : 
+	Element(x, y, width, height), node(n), action(action), pressed(false), disabled(false)
+{
+	this->text.Set(text, 14);
+}
 
 void NLS::UI::Button::Draw() {
-	if (this == Mouse::over) {
-		if (Mouse::State == Mouse::Normal) {
-			if (pressed) {
-				if (action) action();
-				pressed = false;
+	if (UI::Style == UI::Clean) {
+		if (this == Mouse::over) {
+			if (Mouse::State == Mouse::Normal) {
+				if (pressed) {
+					if (action) action();
+					pressed = false;
+				}
+				glColor4f(1, 1, 1, 1);
+			} else if (Mouse::State == Mouse::OnOverClickableLocked) {
+				glColor4f(0.5, 0.5, 0.5, 1);
+			} else {
+				glColor4f(1, 0, 0, 1);
 			}
-			glColor4f(1, 1, 1, 1);
-		} else if (Mouse::State == Mouse::OnOverClickableLocked) {
-			glColor4f(0.5, 0.5, 0.5, 1);
 		} else {
-			glColor4f(1, 0, 0, 1);
+			if (Mouse::State != Mouse::OnOverClickableLocked) pressed = false;
+			if (pressed) glColor4f(0.5, 0.5, 0.5, 1);
+			else glColor4f(0.7, 0.7, 0.7, 1);
 		}
-	} else {
-		if (Mouse::State != Mouse::OnOverClickableLocked) pressed = false;
-		if (pressed) glColor4f(0.5, 0.5, 0.5, 1);
-		else glColor4f(0.7, 0.7, 0.7, 1);
+		Element::Draw();
+		text.Draw(CalcX(), CalcY());
 	}
-	Element::Draw();
+	else if (UI::Style == UI::Modern || UI::Style == UI::Classic) {
+		string nodename = "disabled";
+		if (!disabled) {
+			if (this == Mouse::over) {
+				if (Mouse::State == Mouse::Normal) {
+					if (pressed) {
+						if (action) action();
+						pressed = false;
+					}
+					nodename = "pressed";
+				} else if (Mouse::State == Mouse::OnOverClickableLocked) {
+					nodename = "pressed";
+					pressed = true;
+				} else {
+					nodename = "mouseOver";
+				}
+			} else {
+				nodename = "normal";
+			}
+		}
+		if (!node[nodename]) nodename = "normal";
+		Sprite spr = node[nodename][0] ? node[nodename][0] : node[nodename]; // Channels do not have frames for example
+		spr.Draw(CalcX(), CalcY());
+	}
 }
 void NLS::UI::Button::Click(sf::Mouse::Button b) {
+	if (b == sf::Mouse::Left) pressed = true;
+}
+#pragma endregion
+
+#pragma region Login Screen Special Button
+NLS::UI::LSPageButton::LSPageButton(int x, int y, int width, int height, Node n, function<void()> action, const u32string &text)
+	:Element(x, y, width, height), node(n), action(action), pressed(false)
+{
+	this->text.Set(text, 14);
+}
+
+void NLS::UI::LSPageButton::Draw() {
+	if (UI::Style == UI::Clean) {
+		if (this == Mouse::over) {
+			if (Mouse::State == Mouse::Normal) {
+				if (pressed) {
+					if (action) action();
+					pressed = false;
+				}
+				glColor4f(1, 1, 1, 1);
+			} else if (Mouse::State == Mouse::OnOverClickableLocked) {
+				glColor4f(0.5, 0.5, 0.5, 1);
+			} else {
+				glColor4f(1, 0, 0, 1);
+			}
+		} else {
+			if (Mouse::State != Mouse::OnOverClickableLocked) pressed = false;
+			if (pressed) glColor4f(0.5, 0.5, 0.5, 1);
+			else glColor4f(0.7, 0.7, 0.7, 1);
+		}
+		Element::Draw();
+		text.Draw(CalcX(), CalcY());
+	}
+	else if (UI::Style == UI::Modern || UI::Style == UI::Classic) {
+		string state = "0"; // normal
+		if (this == Mouse::over) {
+			if (Mouse::State == Mouse::Normal) {
+				if (pressed) {
+					if (action) action();
+					pressed = false;
+				}
+			} else if (Mouse::State == Mouse::OnOverClickableLocked) {
+				pressed = true;
+			} 
+			state = "1";
+		}
+
+		Sprite spr = node[state][0];
+		spr.Draw(CalcX() + spr.data->originx, CalcY() + spr.data->originy);
+	}
+}
+void NLS::UI::LSPageButton::Click(sf::Mouse::Button b) {
 	if (b == sf::Mouse::Left) pressed = true;
 }
 #pragma endregion
@@ -274,6 +367,7 @@ void NLS::UI::CheckBox::Click(sf::Mouse::Button b) {
 #pragma region TextBox
 void NLS::UI::TextBox::Click(sf::Mouse::Button b) {
 	if (b == sf::Mouse::Left) {
+
 		TextBox::Active = this;
 		if (sf::Keyboard::IsKeyPressed(sf::Keyboard::RShift) or sf::Keyboard::IsKeyPressed(sf::Keyboard::LShift)) {
 			sel2 = text.GetPos(Mouse::x-CalcX(), false);
@@ -284,15 +378,11 @@ void NLS::UI::TextBox::Click(sf::Mouse::Button b) {
 	}
 }
 void NLS::UI::TextBox::Send() {
-	if (Network::Connected) {
-		Send::Chat(u8(str), false);
-		//Send::GmMapTeleport(toint(u8(str)));
-	}
-	else {
-		Map::Load(u8(str), "");
-	}
-	ThisPlayer->balloon.Set(u8(str), "6");
-	ThisPlayer->balloonRun = 400;
+
+	
+}
+
+void NLS::UI::TextBox::Clear() {
 	str.clear();
 	UpdateText();
 	index = 0;
@@ -300,8 +390,16 @@ void NLS::UI::TextBox::Send() {
 	sel1 = 0;
 	sel2 = 0;
 }
+
 void NLS::UI::TextBox::UpdateText() {
-	text.Set(str, 12);
+	if (password) {
+		string ps;
+		for (auto i = 0; i < str.size(); i++) ps += passwordChar;
+		text.Set(u32(ps), 12);
+	}
+	else {
+		text.Set(str, 12);
+	}
 }
 void NLS::UI::TextBox::HandleChar(char32_t key) {
 	switch (key) {
@@ -340,7 +438,6 @@ void NLS::UI::TextBox::HandleChar(char32_t key) {
 		UpdateText();
 		return;
 	}
-	cout << key << endl;
 	str.replace(index, size, 1, key);
 	sel1 = sel2 = index+1;
 	UpdateSelection();
